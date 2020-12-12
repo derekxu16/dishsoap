@@ -1,0 +1,10 @@
+[package]
+name = "dishsoap-compiler"
+version = "0.1.0"
+authors = ["Derek Xu <xuderekq@hotmail.com>"]
+description = "Learning how to build a compiler in Rust"
+edition = "2018"
+
+[dependencies]
+dishsoap-lexer = { path = "../lexer" }
+dishsoap-parser = { path = "../parser" }

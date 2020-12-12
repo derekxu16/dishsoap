@@ -1,0 +1,9 @@
+[package]
+name = "dishsoap-lexer"
+version = "0.1.0"
+authors = ["Derek Xu <xuderekq@hotmail.com>"]
+description = "Learning how to build a lexer using Logos"
+edition = "2018"
+
+[dependencies]
+logos = { version = "0.11.4" }

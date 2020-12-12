@@ -1,0 +1,9 @@
+[package]
+name = "dishsoap-parser"
+version = "0.1.0"
+authors = ["Derek Xu <xuderekq@hotmail.com>"]
+description = "Learning how to build a Pratt parser in Rust"
+edition = "2018"
+
+[dependencies]
+dishsoap-lexer = { path = "../lexer" }
