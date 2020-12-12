@@ -23,44 +23,78 @@ pub struct ReturnStatement {}
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct VariableDeclarationStatement {
-    pub identifier: Box<Node>,
-    pub variable_type: Box<Node>,
-    pub initial_value: Box<Option<Node>>,
+    pub variable: Box<Node>,
 }
 
 impl Parsable for VariableDeclarationStatement {
     fn parse(parser: &mut Parser) -> Node {
-        assert_eq!(parser.lexer.next(), Some(Token::LetKeyword));
-        let identifier: Option<Node> = parser.parse_identifier();
+        parser.lexer.consume(Token::LetKeyword);
 
-        if identifier.is_none() {
-            panic!("Compilation error");
-        }
+        let variable_declaration =
+            Node::VariableDeclarationStatement(VariableDeclarationStatement {
+                variable: Box::new(parser.parse_variable_like().unwrap()),
+            });
+        parser.lexer.consume(Token::Semicolon);
 
-        parser.lexer.consume(Token::Colon);
-
-        let variable_type: Option<Node> = parser.parse_type();
-        if variable_type.is_none() {
-            panic!("Compilation error: expected type.")
-        }
-
-        let initial_value = match parser.lexer.next() {
-            Some(Token::Semicolon) => None,
-            Some(Token::Equals) => {
-                let expression = parser.parse_expression(0);
-                parser.lexer.consume(Token::Semicolon);
-                expression
-            }
-            _ => panic!("Compilation error"),
-        };
-
-        Node::VariableDeclarationStatement(VariableDeclarationStatement {
-            identifier: Box::new(identifier.unwrap()),
-            variable_type: Box::new(variable_type.unwrap()),
-            initial_value: Box::new(initial_value),
-        })
+        variable_declaration
     }
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct FunctionDeclarationStatement {}
+pub struct FunctionDeclarationStatement {
+    pub identifier: Box<Node>,
+    pub return_type: Box<Node>,
+    pub parameters: Vec<Box<Node>>,
+}
+
+impl FunctionDeclarationStatement {
+    fn parse_parameters(parser: &mut Parser) -> Vec<Box<Node>> {
+        let mut parameters: Vec<Box<Node>> = Vec::new();
+        parser.lexer.consume(Token::ParenOpen);
+        loop {
+            if parser.lexer.peek() == Some(Token::ParenClose) {
+                parser.lexer.consume(Token::ParenClose);
+                break;
+            }
+            let parameter = parser.parse_variable_like();
+            if parameter.is_none() {
+                panic!("Compilation error");
+            }
+            parameters.push(Box::new(parameter.unwrap()));
+
+            if parser.lexer.peek() == Some(Token::Comma) {
+                parser.lexer.consume(Token::Comma);
+            }
+        }
+        parameters
+    }
+}
+
+impl Parsable for FunctionDeclarationStatement {
+    fn parse(parser: &mut Parser) -> Node {
+        parser.lexer.consume(Token::FuncKeyword);
+
+        let identifier: Option<Node> = parser.parse_identifier();
+        if identifier.is_none() {
+            panic!("Compilation error");
+        }
+
+        let parameters = Self::parse_parameters(parser);
+
+        parser.lexer.consume(Token::Colon);
+
+        let return_type: Option<Node> = parser.parse_type();
+        if return_type.is_none() {
+            panic!("Compilation error: expected type.")
+        }
+
+        parser.lexer.consume(Token::BraceOpen);
+        parser.lexer.consume(Token::BraceClose);
+
+        Node::FunctionDeclarationStatement(FunctionDeclarationStatement {
+            identifier: Box::new(identifier.unwrap()),
+            return_type: Box::new(return_type.unwrap()),
+            parameters,
+        })
+    }
+}

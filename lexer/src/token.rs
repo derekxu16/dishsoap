@@ -39,7 +39,7 @@ pub enum Token {
     Identifier,
 
     #[token("func")]
-    FunctionKeyword,
+    FuncKeyword,
 
     #[token("let")]
     LetKeyword,

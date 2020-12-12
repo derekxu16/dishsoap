@@ -1,6 +1,6 @@
 use super::{
-    BinaryExpression, Identifier, InfixOperator, Node, Parser, SourceFile, TypeLiteral,
-    VariableDeclarationStatement,
+    BinaryExpression, FunctionDeclarationStatement, Identifier, InfixOperator, Node, Parser,
+    SourceFile, TypeLiteral, VariableDeclarationStatement, VariableLike,
 };
 
 mod tests {
@@ -73,11 +73,13 @@ mod tests {
             Node::SourceFile(SourceFile {
                 children: vec![Node::VariableDeclarationStatement(
                     VariableDeclarationStatement {
-                        identifier: Box::new(Node::Identifier(Identifier {
-                            name: "a".to_owned()
-                        })),
-                        variable_type: Box::new(Node::TypeLiteral(TypeLiteral::Int)),
-                        initial_value: Box::new(None),
+                        variable: Box::new(Node::VariableLike(VariableLike {
+                            identifier: Box::new(Node::Identifier(Identifier {
+                                name: "a".to_owned()
+                            })),
+                            variable_type: Box::new(Node::TypeLiteral(TypeLiteral::Int)),
+                            initial_value: Box::new(None),
+                        }))
                     }
                 )]
             })
@@ -90,11 +92,64 @@ mod tests {
             Node::SourceFile(SourceFile {
                 children: vec![Node::VariableDeclarationStatement(
                     VariableDeclarationStatement {
+                        variable: Box::new(Node::VariableLike(VariableLike {
+                            identifier: Box::new(Node::Identifier(Identifier {
+                                name: "a".to_owned()
+                            })),
+                            variable_type: Box::new(Node::TypeLiteral(TypeLiteral::Int)),
+                            initial_value: Box::new(Some(Node::IntegerLiteral { value: 5 })),
+                        }))
+                    }
+                )]
+            })
+        );
+    }
+
+    #[test]
+    fn function_declarations() {
+        let mut parser = Parser::new("func a() : int {}");
+        let mut output: Node = parser.parse();
+        assert_eq!(
+            output,
+            Node::SourceFile(SourceFile {
+                children: vec![Node::FunctionDeclarationStatement(
+                    FunctionDeclarationStatement {
                         identifier: Box::new(Node::Identifier(Identifier {
                             name: "a".to_owned()
                         })),
-                        variable_type: Box::new(Node::TypeLiteral(TypeLiteral::Int)),
-                        initial_value: Box::new(Some(Node::IntegerLiteral { value: 5 })),
+                        parameters: vec![],
+                        return_type: Box::new(Node::TypeLiteral(TypeLiteral::Int)),
+                    }
+                )]
+            })
+        );
+        parser = Parser::new("func a(b: int, c: int) : int {}");
+        output = parser.parse();
+        assert_eq!(
+            output,
+            Node::SourceFile(SourceFile {
+                children: vec![Node::FunctionDeclarationStatement(
+                    FunctionDeclarationStatement {
+                        identifier: Box::new(Node::Identifier(Identifier {
+                            name: "a".to_owned()
+                        })),
+                        parameters: vec![
+                            Box::new(Node::VariableLike(VariableLike {
+                                identifier: Box::new(Node::Identifier(Identifier {
+                                    name: "b".to_owned()
+                                })),
+                                variable_type: Box::new(Node::TypeLiteral(TypeLiteral::Int)),
+                                initial_value: Box::new(None),
+                            })),
+                            Box::new(Node::VariableLike(VariableLike {
+                                identifier: Box::new(Node::Identifier(Identifier {
+                                    name: "c".to_owned()
+                                })),
+                                variable_type: Box::new(Node::TypeLiteral(TypeLiteral::Int)),
+                                initial_value: Box::new(None),
+                            }))
+                        ],
+                        return_type: Box::new(Node::TypeLiteral(TypeLiteral::Int)),
                     }
                 )]
             })

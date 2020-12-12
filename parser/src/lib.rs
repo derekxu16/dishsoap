@@ -125,10 +125,19 @@ impl<'ast> Parser<'ast> {
         left
     }
 
+    fn parse_variable_like(&mut self) -> Option<Node> {
+        let variable = match self.lexer.peek() {
+            Some(Token::Identifier) => Some(VariableLike::parse(self)),
+            _ => None,
+        };
+        variable
+    }
+
     fn parse_statement(&mut self) -> Option<Node> {
         let token: Option<Token> = self.lexer.peek();
         match token {
             Some(Token::LetKeyword) => Some(VariableDeclarationStatement::parse(self)),
+            Some(Token::FuncKeyword) => Some(FunctionDeclarationStatement::parse(self)),
             _ => None,
         }
     }

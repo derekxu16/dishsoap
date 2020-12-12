@@ -14,11 +14,14 @@ pub enum Node {
     TypeLiteral(TypeLiteral),
     // Identifier
     Identifier(Identifier),
+    // Variables and parameters
+    VariableLike(VariableLike),
     // Expressions
     PrefixExpression(PrefixExpression),
     BinaryExpression(BinaryExpression),
     // Statements
     VariableDeclarationStatement(VariableDeclarationStatement),
+    FunctionDeclarationStatement(FunctionDeclarationStatement),
     IfStatement(IfStatement),
 }
 
