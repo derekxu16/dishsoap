@@ -40,6 +40,13 @@ impl<'ast> Parser<'ast> {
         }
     }
 
+    fn parse_type(&mut self) -> Option<Node> {
+        match self.lexer.peek() {
+            Some(Token::IntKeyword) | Some(Token::VoidKeyword) => Some(TypeLiteral::parse(self)),
+            _ => None,
+        }
+    }
+
     fn parse_prefix_operator(&mut self) -> Option<Node> {
         let token: Option<Token> = self.lexer.peek();
         match token {

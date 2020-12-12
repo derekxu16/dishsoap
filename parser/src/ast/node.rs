@@ -10,6 +10,8 @@ pub enum Node {
     InfixOperator(InfixOperator),
     // Literals
     IntegerLiteral { value: i32 },
+    // Types
+    TypeLiteral(TypeLiteral),
     // Identifier
     Identifier(Identifier),
     // Expressions

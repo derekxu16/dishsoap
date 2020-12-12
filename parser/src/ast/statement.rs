@@ -24,7 +24,7 @@ pub struct ReturnStatement {}
 #[derive(Debug, PartialEq, Eq)]
 pub struct VariableDeclarationStatement {
     pub identifier: Box<Node>,
-    pub variable_type: String,
+    pub variable_type: Box<Node>,
     pub initial_value: Box<Option<Node>>,
 }
 
@@ -39,11 +39,10 @@ impl Parsable for VariableDeclarationStatement {
 
         parser.lexer.consume(Token::Colon);
 
-        let variable_type: Option<String> = match parser.lexer.next() {
-            Some(Token::IntType) => Some("int".to_owned()),
-            Some(Token::VoidType) => Some("void".to_owned()),
-            _ => None,
-        };
+        let variable_type: Option<Node> = parser.parse_type();
+        if variable_type.is_none() {
+            panic!("Compilation error: expected type.")
+        }
 
         let initial_value = match parser.lexer.next() {
             Some(Token::Semicolon) => None,
@@ -57,7 +56,7 @@ impl Parsable for VariableDeclarationStatement {
 
         Node::VariableDeclarationStatement(VariableDeclarationStatement {
             identifier: Box::new(identifier.unwrap()),
-            variable_type: variable_type.unwrap(),
+            variable_type: Box::new(variable_type.unwrap()),
             initial_value: Box::new(initial_value),
         })
     }

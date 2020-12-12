@@ -66,11 +66,11 @@ pub enum Token {
 
     // Types
     #[token("int")]
-    IntType,
+    IntKeyword,
 
     // Operators
     #[token("void")]
-    VoidType,
+    VoidKeyword,
 
     #[token("++")]
     OperatorIncrement,

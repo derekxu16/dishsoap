@@ -1,5 +1,5 @@
 use super::{
-    BinaryExpression, Identifier, InfixOperator, Node, Parser, SourceFile,
+    BinaryExpression, Identifier, InfixOperator, Node, Parser, SourceFile, TypeLiteral,
     VariableDeclarationStatement,
 };
 
@@ -76,7 +76,7 @@ mod tests {
                         identifier: Box::new(Node::Identifier(Identifier {
                             name: "a".to_owned()
                         })),
-                        variable_type: "int".to_owned(),
+                        variable_type: Box::new(Node::TypeLiteral(TypeLiteral::Int)),
                         initial_value: Box::new(None),
                     }
                 )]
@@ -93,7 +93,7 @@ mod tests {
                         identifier: Box::new(Node::Identifier(Identifier {
                             name: "a".to_owned()
                         })),
-                        variable_type: "int".to_owned(),
+                        variable_type: Box::new(Node::TypeLiteral(TypeLiteral::Int)),
                         initial_value: Box::new(Some(Node::IntegerLiteral { value: 5 })),
                     }
                 )]
