@@ -1,37 +1,21 @@
-use super::super::{Parser, Token};
-use super::node::{Node, Parsable};
+use super::super::{Parser};
+use super::{Block, Node, Parsable};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct SourceFile {
-    pub children: Vec<Node>,
+    pub children: Box<Node>,
 }
 
 impl SourceFile {
-    pub fn new() -> SourceFile {
-        SourceFile {
-            children: Vec::new(),
-        }
+    pub fn new(children: Node) -> Node {
+        Node::SourceFile(SourceFile {
+            children: Box::new(children),
+        })
     }
 }
 
 impl Parsable for SourceFile {
     fn parse(parser: &mut Parser) -> Node {
-        let mut source_file: SourceFile = SourceFile::new();
-        while parser.lexer.peek() != None {
-            let expression: Option<Node> = parser.parse_expression(0);
-            if expression.is_some() {
-                parser.lexer.consume(Token::Semicolon);
-                source_file.children.push(expression.unwrap());
-                continue;
-            }
-            let statement: Option<Node> = parser.parse_statement();
-            if statement.is_some() {
-                source_file.children.push(statement.unwrap());
-                continue;
-            }
-            panic!("Compilation error")
-        }
-
-        Node::SourceFile(source_file)
+        SourceFile::new(Block::parse(parser))
     }
 }

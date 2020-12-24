@@ -4,15 +4,32 @@ use dishsoap_lexer::{Lexer, Token};
 
 pub struct Parser<'ast> {
     lexer: Lexer<'ast>,
+    scope_depth: i32,
 }
 
 impl<'ast> Parser<'ast> {
     pub fn new(source: &'ast str) -> Self {
         let parser = Parser {
             lexer: Lexer::new(source),
+            scope_depth: 0,
         };
 
         parser
+    }
+
+    /// Used to keep track of the number of opening braces encountered.
+    pub fn increase_scope_depth(&mut self) {
+        self.scope_depth += 1;
+    }
+
+    /// Used to keep track of the number of closing braces encountered.
+    pub fn decrease_scope_depth(&mut self) {
+        self.scope_depth -= 1;
+    }
+
+    /// Get the current scope depth.
+    pub fn get_scope_depth(&self) -> i32 {
+        self.scope_depth
     }
 
     /// The entry point to begin parsing.
@@ -138,6 +155,7 @@ impl<'ast> Parser<'ast> {
         match token {
             Some(Token::LetKeyword) => Some(VariableDeclarationStatement::parse(self)),
             Some(Token::FuncKeyword) => Some(FunctionDeclarationStatement::parse(self)),
+            Some(Token::ReturnKeyword) => Some(ReturnStatement::parse(self)),
             _ => None,
         }
     }

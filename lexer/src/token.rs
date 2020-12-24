@@ -50,6 +50,9 @@ pub enum Token {
     #[token("if")]
     IfKeyword,
 
+    #[token("return")]
+    ReturnKeyword,
+
     // Literals
     #[regex("0[xX][0-9a-fA-F]+")]
     HexLiteral,

@@ -1,5 +1,5 @@
 use super::super::{Parser, Token};
-use super::{Node, Parsable};
+use super::{Block, Node, Parsable};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct IfStatement {}
@@ -19,11 +19,45 @@ pub struct WhileStatement {}
 pub struct ForStatement {}
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct ReturnStatement {}
+pub struct ReturnStatement {
+    pub expression: Box<Node>,
+}
+
+impl ReturnStatement {
+    pub fn new(expression: Node) -> Node {
+        Node::ReturnStatement(ReturnStatement {
+            expression: Box::new(expression),
+        })
+    }
+}
+
+impl Parsable for ReturnStatement {
+    fn parse(parser: &mut Parser) -> Node {
+        parser.lexer.consume(Token::ReturnKeyword);
+
+        let expression = match parser.parse_expression(0) {
+            Some(e) => ReturnStatement::new(e),
+            _ => {
+                panic!("Compilation error");
+            }
+        };
+        parser.lexer.consume(Token::Semicolon);
+
+        expression
+    }
+}
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct VariableDeclarationStatement {
     pub variable: Box<Node>,
+}
+
+impl VariableDeclarationStatement {
+    pub fn new(variable: Node) -> Node {
+        Node::VariableDeclarationStatement(VariableDeclarationStatement {
+            variable: Box::new(variable),
+        })
+    }
 }
 
 impl Parsable for VariableDeclarationStatement {
@@ -45,9 +79,24 @@ pub struct FunctionDeclarationStatement {
     pub identifier: Box<Node>,
     pub return_type: Box<Node>,
     pub parameters: Vec<Box<Node>>,
+    pub body: Box<Node>,
 }
 
 impl FunctionDeclarationStatement {
+    pub fn new(
+        identifier: Node,
+        return_type: Node,
+        parameters: Vec<Box<Node>>,
+        body: Node,
+    ) -> Node {
+        Node::FunctionDeclarationStatement(FunctionDeclarationStatement {
+            identifier: Box::new(identifier),
+            return_type: Box::new(return_type),
+            parameters: parameters,
+            body: Box::new(body),
+        })
+    }
+
     fn parse_parameters(parser: &mut Parser) -> Vec<Box<Node>> {
         let mut parameters: Vec<Box<Node>> = Vec::new();
         parser.lexer.consume(Token::ParenOpen);
@@ -88,13 +137,11 @@ impl Parsable for FunctionDeclarationStatement {
             panic!("Compilation error: expected type.")
         }
 
-        parser.lexer.consume(Token::BraceOpen);
-        parser.lexer.consume(Token::BraceClose);
-
         Node::FunctionDeclarationStatement(FunctionDeclarationStatement {
             identifier: Box::new(identifier.unwrap()),
             return_type: Box::new(return_type.unwrap()),
             parameters,
+            body: Box::new(Block::parse(parser)),
         })
     }
 }

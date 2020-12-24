@@ -3,6 +3,8 @@ use super::*;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Node {
+    // Block
+    Block(Block),
     // SourceFile
     SourceFile(SourceFile),
     // Operators
@@ -20,9 +22,10 @@ pub enum Node {
     PrefixExpression(PrefixExpression),
     BinaryExpression(BinaryExpression),
     // Statements
+    IfStatement(IfStatement),
+    ReturnStatement(ReturnStatement),
     VariableDeclarationStatement(VariableDeclarationStatement),
     FunctionDeclarationStatement(FunctionDeclarationStatement),
-    IfStatement(IfStatement),
 }
 
 pub trait Parsable {
