@@ -6,4 +6,4 @@ description = "Learning how to build a lexer using Logos"
 edition = "2018"
 
 [dependencies]
-logos = { version = "0.11.4" }
+logos = { version = "0.12.0" }

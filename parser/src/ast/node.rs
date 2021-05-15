@@ -1,5 +1,5 @@
-use super::super::Parser;
-use super::*;
+use crate::ast::*;
+use crate::Parser;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Node {
@@ -19,6 +19,8 @@ pub enum Node {
     // Variables and parameters
     VariableLike(VariableLike),
     // Expressions
+    VariableReference(VariableReference),
+    FunctionCall(FunctionCall),
     PrefixExpression(PrefixExpression),
     BinaryExpression(BinaryExpression),
     // Statements

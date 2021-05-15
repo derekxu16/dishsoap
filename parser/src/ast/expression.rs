@@ -1,5 +1,5 @@
-use super::super::{Parser, Token};
-use super::node::{Node, Parsable};
+use crate::ast::node::{Node, Parsable};
+use crate::{Parser, Token};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum PrefixOperator {
@@ -45,6 +45,55 @@ impl Parsable for InfixOperator {
             Some(Token::Percent) => Node::InfixOperator(InfixOperator::Modulo),
             _ => panic!("Compilation error"),
         }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct VariableReference {
+    pub identifier: Box<Node>,
+}
+
+impl VariableReference {
+    pub fn new(identifier: Node) -> Node {
+        Node::VariableReference(VariableReference {
+            identifier: Box::new(identifier),
+        })
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct FunctionCall {
+    pub identifier: Box<Node>,
+    pub arguments: Vec<Node>,
+}
+
+impl FunctionCall {
+    pub fn new(identifier: Node, arguments: Vec<Node>) -> Node {
+        Node::FunctionCall(FunctionCall {
+            identifier: Box::new(identifier),
+            arguments,
+        })
+    }
+
+    pub fn parse_arguments(parser: &mut Parser) -> Vec<Node> {
+        let mut arguments: Vec<Node> = Vec::new();
+        parser.lexer.consume(Token::ParenOpen);
+        loop {
+            if parser.lexer.peek() == Some(Token::ParenClose) {
+                parser.lexer.consume(Token::ParenClose);
+                break;
+            }
+            let argument = parser.parse_expression(0);
+            if argument.is_none() {
+                panic!("Compilation error");
+            }
+            arguments.push(argument.unwrap());
+
+            if parser.lexer.peek() == Some(Token::Comma) {
+                parser.lexer.consume(Token::Comma);
+            }
+        }
+        arguments
     }
 }
 

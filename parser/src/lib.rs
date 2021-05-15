@@ -1,4 +1,4 @@
-mod ast;
+pub mod ast;
 use ast::*;
 use dishsoap_lexer::{Lexer, Token};
 
@@ -40,6 +40,23 @@ impl<'ast> Parser<'ast> {
     fn parse_identifier(&mut self) -> Option<Node> {
         match self.lexer.peek() {
             Some(Token::Identifier) => Some(Identifier::parse(self)),
+            _ => None,
+        }
+    }
+
+    /**
+     * Tries to parse a VariableReference or FunctionCall, returns None if unsuccessful.
+     */
+    fn parse_reference(&mut self) -> Option<Node> {
+        let identifier = self.parse_identifier();
+        match identifier {
+            Some(i) => match self.lexer.peek() {
+                Some(Token::ParenOpen) => {
+                    let arguments = FunctionCall::parse_arguments(self);
+                    Some(FunctionCall::new(i, arguments))
+                }
+                _ => Some(VariableReference::new(i)),
+            },
             _ => None,
         }
     }
@@ -108,7 +125,7 @@ impl<'ast> Parser<'ast> {
     fn parse_expression(&mut self, precedence: i32) -> Option<Node> {
         let mut left = self
             .parse_prefix_expression()
-            .or_else(|| self.parse_identifier())
+            .or_else(|| self.parse_reference())
             .or_else(|| self.parse_integer_literal())
             .or_else(|| match self.lexer.peek() {
                 Some(Token::ParenOpen) => {
@@ -150,11 +167,16 @@ impl<'ast> Parser<'ast> {
         variable
     }
 
-    fn parse_statement(&mut self) -> Option<Node> {
-        let token: Option<Token> = self.lexer.peek();
-        match token {
-            Some(Token::LetKeyword) => Some(VariableDeclarationStatement::parse(self)),
+    fn parse_function_declaraction(&mut self) -> Option<Node> {
+        match self.lexer.peek() {
             Some(Token::FuncKeyword) => Some(FunctionDeclarationStatement::parse(self)),
+            _ => None,
+        }
+    }
+
+    fn parse_statement(&mut self) -> Option<Node> {
+        match self.lexer.peek() {
+            Some(Token::LetKeyword) => Some(VariableDeclarationStatement::parse(self)),
             Some(Token::ReturnKeyword) => Some(ReturnStatement::parse(self)),
             _ => None,
         }

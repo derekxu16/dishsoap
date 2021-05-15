@@ -1,9 +1,9 @@
-use super::super::{Parser, Token};
-use super::{Node, Parsable};
+use crate::ast::{Node, Parsable};
+use crate::{Parser, Token};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Block {
-    statements: Vec<Node>,
+    pub statements: Vec<Node>,
 }
 
 impl Block {

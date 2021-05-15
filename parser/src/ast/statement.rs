@@ -92,7 +92,7 @@ impl FunctionDeclarationStatement {
         Node::FunctionDeclarationStatement(FunctionDeclarationStatement {
             identifier: Box::new(identifier),
             return_type: Box::new(return_type),
-            parameters: parameters,
+            parameters,
             body: Box::new(body),
         })
     }
@@ -137,11 +137,11 @@ impl Parsable for FunctionDeclarationStatement {
             panic!("Compilation error: expected type.")
         }
 
-        Node::FunctionDeclarationStatement(FunctionDeclarationStatement {
-            identifier: Box::new(identifier.unwrap()),
-            return_type: Box::new(return_type.unwrap()),
+        FunctionDeclarationStatement::new(
+            identifier.unwrap(),
+            return_type.unwrap(),
             parameters,
-            body: Box::new(Block::parse(parser)),
-        })
+            Block::parse(parser),
+        )
     }
 }
