@@ -2,6 +2,7 @@
 /target
 /test_server
 
+/compiler/*.soap
 /compiler/*.bc
 /compiler/*.o
 /compiler/*.s

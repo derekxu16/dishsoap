@@ -2,13 +2,42 @@ use super::super::{Parser, Token};
 use super::{Block, Node, Parsable};
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct IfStatement {}
+pub struct IfStatement {
+    condition: Box<Node>,
+    if_block: Box<Node>,
+    else_block: Box<Option<Node>>,
+}
+
+impl IfStatement {
+    pub fn new(condition: Node, if_block: Node, else_block: Option<Node>) -> Node {
+        Node::IfStatement(IfStatement {
+            condition: Box::new(condition),
+            if_block: Box::new(if_block),
+            else_block: Box::new(else_block),
+        })
+    }
+}
 
 impl Parsable for IfStatement {
     fn parse(parser: &mut Parser) -> Node {
         parser.lexer.consume(Token::IfKeyword);
         parser.lexer.consume(Token::ParenOpen);
-        Node::IfStatement(IfStatement {})
+        let condition = parser.parse_expression(0);
+        if condition.is_none() {
+            panic!("Compilation error");
+        }
+        parser.lexer.consume(Token::ParenClose);
+
+        let if_block = Block::parse(parser);
+        let else_block = match parser.lexer.peek() {
+            Some(Token::ElseKeyword) => {
+                parser.lexer.consume(Token::ElseKeyword);
+                Some(Block::parse(parser))
+            }
+            _ => None,
+        };
+
+        IfStatement::new(condition.unwrap(), if_block, else_block)
     }
 }
 

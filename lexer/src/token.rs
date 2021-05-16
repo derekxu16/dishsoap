@@ -50,6 +50,9 @@ pub enum Token {
     #[token("if")]
     IfKeyword,
 
+    #[token("else")]
+    ElseKeyword,
+
     #[token("return")]
     ReturnKeyword,
 

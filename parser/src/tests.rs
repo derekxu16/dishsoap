@@ -1,8 +1,4 @@
-use crate::{
-    BinaryExpression, Block, FunctionCall, FunctionDeclarationStatement, Identifier, InfixOperator,
-    Node, Parser, ReturnStatement, SourceFile, TypeLiteral, VariableDeclarationStatement,
-    VariableLike, VariableReference,
-};
+use crate::*;
 
 mod tests {
     use super::*;
@@ -191,14 +187,47 @@ mod tests {
         );
     }
 
-    // #[test]
-    // fn if_statements() {
-    //     let mut parser =
-    //         Parser::new("func main(): int { if (1 == 2) { return 1; } else { return 0; } }");
-    //     let output: Node = parser.parse();
-    //     assert_eq!(
-    //         output,
-    //         define_main_body(Block::new(vec![IfStatement::new()]))
-    //     );
-    // }
+    #[test]
+    fn if_statements() {
+        let mut parser = Parser::new(
+            "func dp(n: int): int {
+                if (n == 0) {
+                    return -1;
+                }
+                return n;
+            }",
+        );
+        let output: Node = parser.parse();
+        assert_eq!(
+            output,
+            SourceFile::new(vec![FunctionDeclarationStatement::new(
+                Node::Identifier(Identifier {
+                    name: "dp".to_owned(),
+                }),
+                Node::TypeLiteral(TypeLiteral::Int),
+                vec![Box::new(Node::VariableLike(VariableLike {
+                    identifier: Box::new(Node::Identifier(Identifier {
+                        name: "n".to_owned()
+                    })),
+                    variable_type: Box::new(Node::TypeLiteral(TypeLiteral::Int)),
+                    initial_value: Box::new(None),
+                }))],
+                Block::new(vec![
+                    IfStatement::new(
+                        BinaryExpression::new(
+                            VariableReference::new(Identifier::new("n".to_owned())),
+                            InfixOperator::new(InfixOperator::Equals),
+                            Node::IntegerLiteral { value: 0 }
+                        ),
+                        Block::new(vec![ReturnStatement::new(PrefixExpression::new(
+                            PrefixOperator::new(PrefixOperator::Minus),
+                            Node::IntegerLiteral { value: 1 }
+                        ))]),
+                        None
+                    ),
+                    ReturnStatement::new(VariableReference::new(Identifier::new("n".to_owned())),)
+                ])
+            )])
+        );
+    }
 }

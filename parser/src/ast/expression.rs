@@ -8,6 +8,12 @@ pub enum PrefixOperator {
     Bang,
 }
 
+impl PrefixOperator {
+    pub fn new(operator: PrefixOperator) -> Node {
+        Node::PrefixOperator(operator)
+    }
+}
+
 impl Parsable for PrefixOperator {
     fn parse(parser: &mut Parser) -> Node {
         match parser.lexer.next() {
@@ -35,6 +41,12 @@ pub enum InfixOperator {
     Equals,
 }
 
+impl InfixOperator {
+    pub fn new(operator: InfixOperator) -> Node {
+        Node::InfixOperator(operator)
+    }
+}
+
 impl Parsable for InfixOperator {
     fn parse(parser: &mut Parser) -> Node {
         match parser.lexer.next() {
@@ -43,6 +55,11 @@ impl Parsable for InfixOperator {
             Some(Token::Times) => Node::InfixOperator(InfixOperator::Times),
             Some(Token::Divide) => Node::InfixOperator(InfixOperator::Divide),
             Some(Token::Percent) => Node::InfixOperator(InfixOperator::Modulo),
+            Some(Token::LessThan) => Node::InfixOperator(InfixOperator::LessThan),
+            Some(Token::LessThanEquals) => Node::InfixOperator(InfixOperator::LessThanEquals),
+            Some(Token::GreaterThan) => Node::InfixOperator(InfixOperator::GreaterThan),
+            Some(Token::GreaterThanEquals) => Node::InfixOperator(InfixOperator::GreaterThanEquals),
+            Some(Token::DoubleEquals) => Node::InfixOperator(InfixOperator::Equals),
             _ => panic!("Compilation error"),
         }
     }
@@ -99,16 +116,31 @@ impl FunctionCall {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct PrefixExpression {
-    pub operator: Box<Option<Node>>,
-    pub operand: Box<Option<Node>>,
+    pub operator: Box<Node>,
+    pub operand: Box<Node>,
+}
+
+impl PrefixExpression {
+    pub fn new(operator: Node, operand: Node) -> Node {
+        Node::PrefixExpression(PrefixExpression {
+            operator: Box::new(operator),
+            operand: Box::new(operand),
+        })
+    }
 }
 
 impl Parsable for PrefixExpression {
     fn parse(parser: &mut Parser) -> Node {
-        Node::PrefixExpression(PrefixExpression {
-            operator: Box::new(parser.parse_prefix_operator()),
-            operand: Box::new(parser.parse_expression(0)),
-        })
+        let operator = parser.parse_prefix_operator();
+        if operator.is_none() {
+            panic!("Compilation error")
+        }
+        let operand = parser.parse_expression(0);
+        if operand.is_none() {
+            panic!("Compilation error")
+        }
+
+        PrefixExpression::new(operator.unwrap(), operand.unwrap())
     }
 }
 
@@ -117,6 +149,16 @@ pub struct BinaryExpression {
     pub left: Box<Node>,
     pub operator: Box<Node>,
     pub right: Box<Node>,
+}
+
+impl BinaryExpression {
+    pub fn new(left: Node, operator: Node, right: Node) -> Node {
+        Node::BinaryExpression(BinaryExpression {
+            left: Box::new(left),
+            operator: Box::new(operator),
+            right: Box::new(right),
+        })
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]

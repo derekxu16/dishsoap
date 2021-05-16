@@ -1,12 +1,8 @@
 use crate::utils::{identifier_to_c_str, identifier_to_string, string_to_c_str};
 use dishsoap_parser::ast::*;
-use llvm_sys::core::{
-    LLVMAddFunction, LLVMAppendBasicBlockInContext, LLVMBuildAdd, LLVMBuildAlloca, LLVMBuildCall,
-    LLVMBuildLoad, LLVMBuildMul, LLVMBuildRet, LLVMBuildSDiv, LLVMBuildSRem, LLVMBuildStore,
-    LLVMBuildSub, LLVMConstInt, LLVMFunctionType, LLVMGetNamedFunction, LLVMGetParams,
-    LLVMInt32Type, LLVMPositionBuilderAtEnd, LLVMVoidType,
-};
+use llvm_sys::core::*;
 use llvm_sys::prelude::{LLVMBuilderRef, LLVMContextRef, LLVMModuleRef, LLVMTypeRef, LLVMValueRef};
+use llvm_sys::LLVMIntPredicate;
 use std::collections::HashMap;
 use std::mem::forget;
 
@@ -195,6 +191,13 @@ impl<'a> Builder<'a> {
                         ),
                         InfixOperator::Modulo => LLVMBuildSRem(
                             *self.builder,
+                            self.visit(&*e.left),
+                            self.visit(&*e.right),
+                            string_to_c_str(&"srem_tmp".to_owned()),
+                        ),
+                        InfixOperator::Equals => LLVMBuildICmp(
+                            *self.builder,
+                            LLVMIntPredicate::LLVMIntEQ,
                             self.visit(&*e.left),
                             self.visit(&*e.right),
                             string_to_c_str(&"srem_tmp".to_owned()),

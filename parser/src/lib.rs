@@ -94,8 +94,12 @@ impl<'ast> Parser<'ast> {
     pub fn parse_infix_operator(&mut self) -> Option<Node> {
         let token: Option<Token> = self.lexer.peek();
         match token {
-            Some(Token::Plus) | Some(Token::Minus) | Some(Token::Times) | Some(Token::Divide)
-            | Some(Token::Percent) => Some(InfixOperator::parse(self)),
+            Some(Token::Plus)
+            | Some(Token::Minus)
+            | Some(Token::Times)
+            | Some(Token::Divide)
+            | Some(Token::Percent)
+            | Some(Token::DoubleEquals) => Some(InfixOperator::parse(self)),
             _ => None,
         }
     }
@@ -104,6 +108,7 @@ impl<'ast> Parser<'ast> {
     fn get_precedence(&mut self) -> i32 {
         match self.lexer.peek() {
             Some(Token::Equals) => 1,
+            Some(Token::DoubleEquals) => 2,
             Some(Token::Plus) | Some(Token::Minus) => 3,
             Some(Token::Times) | Some(Token::Divide) | Some(Token::Percent) => 4,
             _ => 0,
@@ -177,6 +182,7 @@ impl<'ast> Parser<'ast> {
     fn parse_statement(&mut self) -> Option<Node> {
         match self.lexer.peek() {
             Some(Token::LetKeyword) => Some(VariableDeclarationStatement::parse(self)),
+            Some(Token::IfKeyword) => Some(IfStatement::parse(self)),
             Some(Token::ReturnKeyword) => Some(ReturnStatement::parse(self)),
             _ => None,
         }
