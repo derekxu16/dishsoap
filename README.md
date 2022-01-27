@@ -2,7 +2,7 @@
 
 ### Tech
 - Lexing is done using [Logos](https://github.com/maciejhirsz/logos)
-- Parsing is done using a Pratt parser
+- Parsing is done using a handwritten recursive descent parser, that makes use of Pratt parsing
 - The rest is done using [LLVM](https://crates.io/crates/llvm-sys) through [llvm-sys](https://crates.io/crates/llvm-sys)
 
 ### References:
