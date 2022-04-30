@@ -1,62 +1,36 @@
-use crate::ast::{Node, Parsable};
-use crate::{Parser, Token};
+use super::{Expression, Statement};
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct Block {
-    pub statements: Vec<Node>,
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Block<CommonFields: Clone> {
+    pub statements: Vec<Statement<CommonFields>>,
+    pub final_expression: Option<Expression<CommonFields>>,
 }
 
-impl Block {
-    pub fn new(statements: Vec<Node>) -> Node {
-        Node::Block(Block { statements })
+impl<CommonFields: Clone> Block<CommonFields> {
+    pub fn new(
+        statements: Vec<Statement<CommonFields>>,
+        final_expression: Option<Expression<CommonFields>>,
+    ) -> Self {
+        Block::<CommonFields> {
+            statements,
+            final_expression,
+        }
     }
-}
 
-impl Parsable for Block {
-    fn parse(parser: &mut Parser) -> Node {
-        let mut statements: Vec<Node> = Vec::new();
-
-        let target_depth: i32 = parser.get_scope_depth();
-
-        // The scope depth only needs to be increased when there are braces.
-        // A source file contains a block too, but isn't usually surrounded by braces.
-        if parser.lexer.peek() == Some(Token::BraceOpen) {
-            parser.lexer.consume(Token::BraceOpen);
-            parser.increase_scope_depth();
+    pub fn new_no_final_expression(statements: Vec<Statement<CommonFields>>) -> Self {
+        Block::<CommonFields> {
+            statements,
+            final_expression: None,
         }
+    }
 
-        loop {
-            match parser.lexer.peek() {
-                Some(Token::BraceClose) => {
-                    parser.lexer.consume(Token::BraceClose);
-                    parser.decrease_scope_depth();
-                    if parser.get_scope_depth() == target_depth {
-                        break;
-                    }
-                }
-                None => {
-                    if parser.get_scope_depth() == 0 {
-                        break;
-                    } else {
-                        panic!("Compilation error: unexpected end of file.");
-                    }
-                }
-                _ => {}
-            }
-            let expression: Option<Node> = parser.parse_expression(0);
-            if expression.is_some() {
-                parser.lexer.consume(Token::Semicolon);
-                statements.push(expression.unwrap());
-                continue;
-            }
-            let statement: Option<Node> = parser.parse_statement();
-            if statement.is_some() {
-                statements.push(statement.unwrap());
-                continue;
-            }
-            panic!("Compilation error")
+    pub fn new_with_final_expression(
+        statements: Vec<Statement<CommonFields>>,
+        final_expression: Expression<CommonFields>,
+    ) -> Self {
+        Block::<CommonFields> {
+            statements,
+            final_expression: Some(final_expression),
         }
-
-        Block::new(statements)
     }
 }

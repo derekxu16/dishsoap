@@ -1,36 +1,14 @@
-use crate::ast::{Node, Parsable};
-use crate::{Parser, Token};
+use std::rc::Rc;
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct SourceFile {
-    pub children: Vec<Node>,
+use crate::Declaration;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceFile<CommonFields: Clone> {
+    pub declarations: Vec<Rc<Declaration<CommonFields>>>,
 }
 
-impl SourceFile {
-    pub fn new(children: Vec<Node>) -> Node {
-        Node::SourceFile(SourceFile { children })
-    }
-}
-
-impl Parsable for SourceFile {
-    fn parse(parser: &mut Parser) -> Node {
-        let mut children: Vec<Node> = Vec::new();
-
-        loop {
-            match parser.lexer.peek() {
-                Some(Token::FuncKeyword) => (),
-                None => {
-                    break;
-                }
-                _ => panic!("Compilation error: unexpected token"),
-            }
-            let function_delcaration: Option<Node> = parser.parse_function_declaraction();
-            if function_delcaration.is_none() {
-                panic!("Compilation error")
-            }
-            children.push(function_delcaration.unwrap());
-        }
-
-        SourceFile::new(children)
+impl<CommonFields: Clone> SourceFile<CommonFields> {
+    pub fn new(declarations: Vec<Rc<Declaration<CommonFields>>>) -> Self {
+        SourceFile::<CommonFields> { declarations }
     }
 }

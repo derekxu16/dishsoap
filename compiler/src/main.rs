@@ -1,54 +1,84 @@
-mod builder;
+mod backend;
+mod types;
 mod utils;
+mod visitor;
 
-use builder::*;
+use std::ffi::CString;
+
+use clap::Parser as clap_Parser;
+use dishsoap_parser::ast::{Node, UntypedNodeCommonFields};
 use dishsoap_parser::Parser;
 use llvm_sys::bit_writer::LLVMWriteBitcodeToFile;
-use llvm_sys::core::{
-    LLVMAddFunction, LLVMContextCreate, LLVMContextDispose, LLVMCreateBuilderInContext,
-    LLVMDisposeBuilder, LLVMDisposeModule, LLVMFunctionType, LLVMInt8Type,
-    LLVMModuleCreateWithName, LLVMPointerType, LLVMSetTarget, LLVMVoidType,
-};
-use llvm_sys::target_machine::LLVMGetDefaultTargetTriple;
-use utils::string_to_c_str;
+use llvm_sys::core::*;
+use llvm_sys::prelude::{LLVMContextRef, LLVMModuleRef};
+// use llvm_sys::target_machine::LLVMGetDefaultTargetTriple;
+use crate::types::{gather_top_level_declarations, TypeChecker};
+use backend::builder::Builder;
+use utils::string_to_c_string;
+use visitor::{PostOrderVisitor, PreOrderVisitor};
 
-fn main() {
-    let path = std::env::args()
-        .nth(1)
-        .expect("Error: no source file path specified");
-    let content = std::fs::read_to_string(path).expect("Error: could not read source file");
+#[derive(clap_Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+struct Cli {
+    #[clap(long)]
+    dump_ir: bool,
 
-    let mut parser = Parser::new(&content);
-    let ast = parser.parse();
+    file_path: String,
+}
+
+fn parse_file(file_content: &String) -> Node<UntypedNodeCommonFields> {
+    let mut parser = Parser::new(file_content);
+
+    parser.parse()
+}
+
+pub fn get_llvm_module_from_file(context: LLVMContextRef, file_content: &String) -> LLVMModuleRef {
+    let untyped_ast = &parse_file(file_content);
+    let mut type_checker = TypeChecker::new(gather_top_level_declarations(untyped_ast));
+    let typed_ast = type_checker.visit(&untyped_ast);
 
     unsafe {
-        let context = LLVMContextCreate();
-        let module = LLVMModuleCreateWithName(string_to_c_str(&"main".to_owned()));
+        let module_name = CString::new("main").unwrap();
+        let module = LLVMModuleCreateWithName(module_name.as_ptr());
         let llvm_builder = LLVMCreateBuilderInContext(context);
 
-        let log_func_type = LLVMFunctionType(
-            LLVMVoidType(),
-            [LLVMPointerType(LLVMInt8Type(), 0)].as_ptr() as *mut _,
-            1,
-            0,
-        );
+        // let log_func_type = LLVMFunctionType(
+        //     LLVMVoidType(),
+        //     [LLVMPointerType(LLVMInt8Type(), 0)].as_ptr() as *mut _,
+        //     1,
+        //     0,
+        // );
         // let log_func = LLVMAddFunction(module, string_to_c_str(&"log".to_owned()), log_func_type);
 
         let mut builder = Builder::new(&context, &module, &llvm_builder);
-        builder.build(&ast);
-
-        LLVMSetTarget(
-            module,
-            string_to_c_str(&"wasm32-unknown-unknown-wasm".to_owned()),
-        );
-        // LLVMSetTarget(module, LLVMGetDefaultTargetTriple());
-        LLVMWriteBitcodeToFile(module, string_to_c_str(&"main.bc".to_owned()));
+        builder.visit(&typed_ast);
 
         LLVMDisposeBuilder(llvm_builder);
+
+        module
+    }
+}
+
+fn main() {
+    let cli = Cli::parse();
+    let file_content =
+        std::fs::read_to_string(cli.file_path).expect("Error: could not read source file");
+
+    unsafe {
+        let context = LLVMContextCreate();
+        let module = get_llvm_module_from_file(context, &file_content);
+        LLVMSetTarget(
+            module,
+            string_to_c_string("wasm32-unknown-unknown-wasm".to_owned()).as_ptr(),
+        );
+        // LLVMSetTarget(module, LLVMGetDefaultTargetTriple());
+        if cli.dump_ir {
+            LLVMDumpModule(module);
+        } else {
+            LLVMWriteBitcodeToFile(module, string_to_c_string("main.bc".to_owned()).as_ptr());
+        }
+
         LLVMDisposeModule(module);
         LLVMContextDispose(context);
     }
 }
-
-#[cfg(test)]
-mod tests {}

@@ -1,19 +1,15 @@
-use dishsoap_parser::ast::Node;
+use std::ffi::CString;
 
-pub fn string_to_c_str(s: &String) -> *const i8 {
-    return format!("{}\0", s).as_ptr() as *const i8;
+use dishsoap_parser::ast::Identifier;
+
+pub fn string_to_c_string(s: String) -> CString {
+    return CString::new(s).unwrap();
 }
 
-pub fn identifier_to_string(identifier: &Node) -> String {
-    match identifier {
-        Node::Identifier(i) => i.name.to_owned(),
-        _ => panic!("Compilation error: expected an identifier"),
-    }
+pub fn identifier_to_string(identifier: &Identifier) -> String {
+    identifier.name.clone()
 }
 
-pub fn identifier_to_c_str(identifier: &Node) -> *const i8 {
-    match identifier {
-        Node::Identifier(i) => string_to_c_str(&i.name),
-        _ => panic!("Compilation error: expected an identifier"),
-    }
+pub fn identifier_to_c_string(identifier: &Identifier) -> CString {
+    string_to_c_string(identifier.name.clone())
 }

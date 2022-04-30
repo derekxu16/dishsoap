@@ -1,4 +1,7 @@
 pub mod ast;
+pub mod test_inputs;
+use std::rc::Rc;
+
 use ast::*;
 use dishsoap_lexer::{Lexer, Token};
 
@@ -18,89 +21,125 @@ impl<'ast> Parser<'ast> {
     }
 
     /// Used to keep track of the number of opening braces encountered.
-    pub fn increase_scope_depth(&mut self) {
+    fn increase_scope_depth(&mut self) {
         self.scope_depth += 1;
     }
 
     /// Used to keep track of the number of closing braces encountered.
-    pub fn decrease_scope_depth(&mut self) {
+    fn decrease_scope_depth(&mut self) {
         self.scope_depth -= 1;
     }
 
     /// Get the current scope depth.
-    pub fn get_scope_depth(&self) -> i32 {
+    fn get_scope_depth(&self) -> i32 {
         self.scope_depth
     }
 
-    /// The entry point to begin parsing.
-    pub fn parse(&mut self) -> Node {
-        SourceFile::parse(self)
+    fn parse_identifier(&mut self) -> Identifier {
+        match self.lexer.consume(Token::Identifier) {
+            Err(e) => panic!("{}", e.message),
+            Ok(Token::Identifier) => Identifier::new(self.lexer.slice().to_owned()),
+            _ => unreachable!(),
+        }
     }
 
-    fn parse_identifier(&mut self) -> Option<Node> {
+    fn parse_type_literal(&mut self) -> TypeLiteral {
+        match self.lexer.pop() {
+            Some(Token::UnitPrimitiveKeyword) => TypeLiteral::UnitType,
+            Some(Token::BoolPrimitiveKeyword) => TypeLiteral::BoolType,
+            Some(Token::I32PrimitiveKeyword) => TypeLiteral::I32Type,
+            _ => panic!("Compilation error"),
+        }
+    }
+
+    fn parse_type(&mut self) -> Type {
         match self.lexer.peek() {
-            Some(Token::Identifier) => Some(Identifier::parse(self)),
-            _ => None,
+            Some(Token::UnitPrimitiveKeyword)
+            | Some(Token::BoolPrimitiveKeyword)
+            | Some(Token::I32PrimitiveKeyword) => Type::TypeLiteral(self.parse_type_literal()),
+            Some(Token::ParenOpen) => todo!("Support function type annotations"),
+            _ => panic!("Compilation error"),
+        }
+    }
+
+    fn parse_boolean_literal(&mut self) -> Option<Expression<UntypedNodeCommonFields>> {
+        match self.lexer.pop() {
+            Some(Token::TrueKeyword) => {
+                Some(Expression::BooleanLiteral(Rc::new(BooleanLiteral::<
+                    UntypedNodeCommonFields,
+                >::new(
+                    true
+                ))))
+            }
+            Some(Token::FalseKeyword) => {
+                Some(Expression::BooleanLiteral(Rc::new(BooleanLiteral::<
+                    UntypedNodeCommonFields,
+                >::new(
+                    false
+                ))))
+            }
+            _ => panic!("Compilation error: unexpected token"),
+        }
+    }
+
+    fn parse_integer_literal(&mut self) -> Option<Expression<UntypedNodeCommonFields>> {
+        match self.lexer.consume(Token::IntegerLiteral) {
+            Err(e) => panic!("{}", e.message),
+            _ => {
+                let value: String = self.lexer.slice().to_owned();
+                Some(Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
+                    UntypedNodeCommonFields,
+                >::new(
+                    value.parse::<i32>().unwrap(),
+                ))))
+            }
         }
     }
 
     /**
      * Tries to parse a VariableReference or FunctionCall, returns None if unsuccessful.
      */
-    fn parse_reference(&mut self) -> Option<Node> {
+    fn parse_reference(&mut self) -> Option<Expression<UntypedNodeCommonFields>> {
         let identifier = self.parse_identifier();
-        match identifier {
-            Some(i) => match self.lexer.peek() {
-                Some(Token::ParenOpen) => {
-                    let arguments = FunctionCall::parse_arguments(self);
-                    Some(FunctionCall::new(i, arguments))
-                }
-                _ => Some(VariableReference::new(i)),
-            },
-            _ => None,
-        }
-    }
-
-    fn parse_integer_literal(&mut self) -> Option<Node> {
         match self.lexer.peek() {
-            Some(Token::IntegerLiteral) => {
-                let value: String = self.lexer.slice().to_owned();
-                self.lexer.consume(Token::IntegerLiteral);
-                Some(Node::IntegerLiteral {
-                    value: value.parse::<i32>().unwrap(),
-                })
+            Some(Token::ParenOpen) => {
+                let arguments = self.parse_arguments();
+                Some(Expression::FunctionCall(Rc::new(FunctionCall::<
+                    UntypedNodeCommonFields,
+                >::new(
+                    identifier, arguments
+                ))))
             }
-            _ => None,
+            _ => Some(Expression::<UntypedNodeCommonFields>::VariableReference(
+                Rc::new(VariableReference::<UntypedNodeCommonFields>::new(
+                    identifier,
+                )),
+            )),
         }
     }
 
-    fn parse_type(&mut self) -> Option<Node> {
-        match self.lexer.peek() {
-            Some(Token::IntKeyword) | Some(Token::VoidKeyword) => Some(TypeLiteral::parse(self)),
-            _ => None,
+    fn parse_prefix_operator(&mut self) -> PrefixOperator {
+        match self.lexer.pop() {
+            // Some(Token::Plus) => PrefixOperator::Plus,
+            Some(Token::Minus) => PrefixOperator::Minus,
+            Some(Token::Bang) => PrefixOperator::Bang,
+            _ => panic!("Compilation error: unexpected token"),
         }
     }
 
-    fn parse_prefix_operator(&mut self) -> Option<Node> {
-        let token: Option<Token> = self.lexer.peek();
-        match token {
-            Some(Token::Plus) | Some(Token::Minus) | Some(Token::Bang) => {
-                Some(PrefixOperator::parse(self))
-            }
-            _ => None,
-        }
-    }
-
-    pub fn parse_infix_operator(&mut self) -> Option<Node> {
-        let token: Option<Token> = self.lexer.peek();
-        match token {
-            Some(Token::Plus)
-            | Some(Token::Minus)
-            | Some(Token::Times)
-            | Some(Token::Divide)
-            | Some(Token::Percent)
-            | Some(Token::DoubleEquals) => Some(InfixOperator::parse(self)),
-            _ => None,
+    fn parse_infix_operator(&mut self) -> InfixOperator {
+        match self.lexer.pop() {
+            Some(Token::Plus) => InfixOperator::Plus,
+            Some(Token::Minus) => InfixOperator::Minus,
+            Some(Token::Times) => InfixOperator::Times,
+            Some(Token::Divide) => InfixOperator::Divide,
+            Some(Token::Percent) => InfixOperator::Modulo,
+            Some(Token::LessThan) => InfixOperator::LessThan,
+            Some(Token::LessThanEquals) => InfixOperator::LessThanEquals,
+            Some(Token::GreaterThan) => InfixOperator::GreaterThan,
+            Some(Token::GreaterThanEquals) => InfixOperator::GreaterThanEquals,
+            Some(Token::DoubleEquals) => InfixOperator::DoubleEquals,
+            _ => panic!("Compilation error: unexpected token"),
         }
     }
 
@@ -109,42 +148,90 @@ impl<'ast> Parser<'ast> {
         match self.lexer.peek() {
             Some(Token::Equals) => 1,
             Some(Token::DoubleEquals) => 2,
-            Some(Token::Plus) | Some(Token::Minus) => 3,
-            Some(Token::Times) | Some(Token::Divide) | Some(Token::Percent) => 4,
+            Some(Token::LessThan)
+            | Some(Token::LessThanEquals)
+            | Some(Token::GreaterThan)
+            | Some(Token::GreaterThanEquals) => 3,
+            Some(Token::Plus) | Some(Token::Minus) => 4,
+            Some(Token::Times) | Some(Token::Divide) | Some(Token::Percent) => 5,
             _ => 0,
         }
     }
 
-    fn parse_prefix_expression(&mut self) -> Option<Node> {
-        match self.lexer.peek() {
-            Some(Token::Plus) | Some(Token::Minus) | Some(Token::Bang) => {
-                Some(PrefixExpression::parse(self))
-            }
-            _ => None,
+    fn parse_prefix_expression(&mut self) -> PrefixExpression<UntypedNodeCommonFields> {
+        let operator = self.parse_prefix_operator();
+        let operand = self.parse_expression(0);
+        if operand.is_none() {
+            panic!("Compilation error");
         }
+
+        PrefixExpression::<UntypedNodeCommonFields>::new(operator, operand.unwrap())
+    }
+
+    fn parse_if_exression(&mut self) -> IfExpression<UntypedNodeCommonFields> {
+        match self.lexer.consume(Token::IfKeyword) {
+            Err(e) => panic!("{}", e.message),
+            _ => (),
+        }
+        match self.lexer.consume(Token::ParenOpen) {
+            Err(e) => panic!("{}", e.message),
+            _ => (),
+        }
+        let condition = self.parse_expression(0);
+        if condition.is_none() {
+            panic!("Compilation error");
+        }
+        match self.lexer.consume(Token::ParenClose) {
+            Err(e) => panic!("{}", e.message),
+            _ => (),
+        }
+
+        let then_block = self.parse_block();
+        let else_block = match self.lexer.peek() {
+            Some(Token::ElseKeyword) => {
+                let _ = self.lexer.consume(Token::ElseKeyword);
+                self.parse_block()
+            }
+            _ => Block::new_no_final_expression(vec![]),
+        };
+
+        IfExpression::<UntypedNodeCommonFields>::new(
+            condition.unwrap(),
+            Rc::new(then_block),
+            Rc::new(else_block),
+        )
     }
 
     /// Parses an expression.
     // Uses Pratt parsing to handle operator precedence.
     // http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/
-    fn parse_expression(&mut self, precedence: i32) -> Option<Node> {
-        let mut left = self
-            .parse_prefix_expression()
-            .or_else(|| self.parse_reference())
-            .or_else(|| self.parse_integer_literal())
-            .or_else(|| match self.lexer.peek() {
-                Some(Token::ParenOpen) => {
-                    self.lexer.consume(Token::ParenOpen);
-                    let expression: Option<Node> = self.parse_expression(precedence);
-                    if expression.is_none() {
-                        panic!("Compilation error");
-                    }
-                    self.lexer.consume(Token::ParenClose);
-
-                    expression
+    fn parse_expression(&mut self, precedence: i32) -> Option<Expression<UntypedNodeCommonFields>> {
+        let mut left = match self.lexer.peek() {
+            Some(Token::Plus) | Some(Token::Minus) | Some(Token::Bang) => Some(
+                Expression::PrefixExpression(Rc::new(self.parse_prefix_expression())),
+            ),
+            Some(Token::Identifier) => self.parse_reference(),
+            Some(Token::TrueKeyword) | Some(Token::FalseKeyword) => self.parse_boolean_literal(),
+            Some(Token::IntegerLiteral) => self.parse_integer_literal(),
+            Some(Token::IfKeyword) => {
+                Some(Expression::IfExpression(Rc::new(self.parse_if_exression())))
+            }
+            Some(Token::ParenOpen) => {
+                let _ = self.lexer.consume(Token::ParenOpen);
+                let expression: Option<Expression<UntypedNodeCommonFields>> =
+                    self.parse_expression(precedence);
+                if expression.is_none() {
+                    panic!("Compilation error");
                 }
-                _ => None,
-            });
+                match self.lexer.consume(Token::ParenClose) {
+                    Err(e) => panic!("{}", e.message),
+                    _ => (),
+                }
+
+                expression
+            }
+            _ => None,
+        };
 
         loop {
             let next_precedence = self.get_precedence();
@@ -155,37 +242,254 @@ impl<'ast> Parser<'ast> {
 
             let infix_operator = self.parse_infix_operator();
 
-            left = Some(Node::BinaryExpression(BinaryExpression {
-                left: Box::new(left.unwrap()),
-                operator: Box::new(infix_operator.unwrap()),
-                right: Box::new(self.parse_expression(next_precedence).unwrap()),
-            }));
+            left = Some(Expression::BinaryExpression(Rc::new(BinaryExpression::<
+                UntypedNodeCommonFields,
+            >::new(
+                left.unwrap(),
+                infix_operator,
+                self.parse_expression(next_precedence).unwrap(),
+            ))));
         }
         left
     }
 
-    fn parse_variable_like(&mut self) -> Option<Node> {
-        let variable = match self.lexer.peek() {
-            Some(Token::Identifier) => Some(VariableLike::parse(self)),
-            _ => None,
-        };
-        variable
+    fn parse_arguments(&mut self) -> Vec<Expression<UntypedNodeCommonFields>> {
+        let mut arguments: Vec<Expression<UntypedNodeCommonFields>> = Vec::new();
+
+        match self.lexer.consume(Token::ParenOpen) {
+            Err(e) => panic!("{}", e.message),
+            _ => (),
+        }
+
+        loop {
+            if self.lexer.peek() == Some(Token::ParenClose) {
+                let _ = self.lexer.consume(Token::ParenClose);
+                break;
+            }
+
+            let argument = self.parse_expression(0);
+            if argument.is_none() {
+                panic!("Compilation error");
+            }
+            arguments.push(argument.unwrap());
+
+            if self.lexer.peek() == Some(Token::Comma) {
+                let _ = self.lexer.consume(Token::Comma);
+            }
+        }
+        arguments
     }
 
-    fn parse_function_declaraction(&mut self) -> Option<Node> {
+    fn parse_variable_declarator(&mut self) -> VariableDeclarator<UntypedNodeCommonFields> {
         match self.lexer.peek() {
-            Some(Token::FuncKeyword) => Some(FunctionDeclarationStatement::parse(self)),
+            Some(Token::Identifier) => {
+                let identifier = self.parse_identifier();
+
+                match self.lexer.consume(Token::Colon) {
+                    Err(e) => panic!("{}", e.message),
+                    _ => (),
+                }
+
+                let variable_type = self.parse_type();
+
+                VariableDeclarator::<UntypedNodeCommonFields> {
+                    common_fields: UntypedNodeCommonFields::new(),
+                    identifier,
+                    variable_type,
+                }
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    fn parse_parameter(&mut self) -> Parameter<UntypedNodeCommonFields> {
+        match self.lexer.peek() {
+            Some(Token::Identifier) => {
+                let variable_declarator = self.parse_variable_declarator();
+
+                Parameter::<UntypedNodeCommonFields>::new(Rc::new(variable_declarator))
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    fn parse_parameters(&mut self) -> Vec<Parameter<UntypedNodeCommonFields>> {
+        let mut parameters: Vec<Parameter<UntypedNodeCommonFields>> = Vec::new();
+
+        match self.lexer.consume(Token::ParenOpen) {
+            Err(e) => panic!("{}", e.message),
+            _ => (),
+        }
+
+        loop {
+            if self.lexer.peek() == Some(Token::ParenClose) {
+                let _ = self.lexer.consume(Token::ParenClose);
+                break;
+            }
+
+            let parameter = self.parse_parameter();
+            parameters.push(parameter);
+
+            if self.lexer.peek() == Some(Token::Comma) {
+                let _ = self.lexer.consume(Token::Comma);
+            }
+        }
+        parameters
+    }
+
+    fn parse_block(&mut self) -> Block<UntypedNodeCommonFields> {
+        let target_depth: i32 = self.get_scope_depth();
+
+        if self.lexer.peek() == Some(Token::BraceOpen) {
+            let _ = self.lexer.consume(Token::BraceOpen);
+            self.increase_scope_depth();
+        }
+
+        let mut statements: Vec<Statement<UntypedNodeCommonFields>> = Vec::new();
+        let mut maybe_final_expression;
+
+        loop {
+            let statement = self.parse_statement();
+            if statement.is_some() {
+                statements.push(statement.unwrap());
+                continue;
+            } else {
+                maybe_final_expression = self.parse_expression(0);
+                match self.lexer.peek() {
+                    Some(Token::BraceClose) => {
+                        let _ = self.lexer.consume(Token::BraceClose);
+                        self.decrease_scope_depth();
+                        if self.get_scope_depth() == target_depth {
+                            break;
+                        }
+                    }
+                    _ => (),
+                }
+            }
+        }
+
+        match maybe_final_expression {
+            Some(e) => Block::new_with_final_expression(statements, e),
+            None => Block::new_no_final_expression(statements),
+        }
+    }
+
+    // TODO(derekxu16): Support return statements.
+    // fn parse_return_statement(&mut self) -> ReturnStatement<UntypedNodeCommonFields> {
+    //     match self.lexer.consume(Token::ReturnKeyword) {
+    //         Err(e) => panic!("{}", e.message),
+    //         _ => (),
+    //     }
+
+    //     let expression = match self.parse_expression(0) {
+    //         Some(e) => ReturnStatement::new(e),
+    //         _ => {
+    //             panic!("Compilation error");
+    //         }
+    //     };
+
+    //     match self.lexer.consume(Token::Semicolon) {
+    //         Err(e) => panic!("{}", e.message),
+    //         _ => (),
+    //     }
+
+    //     expression
+    // }
+
+    fn parse_function_declaraction(&mut self) -> FunctionDeclaration<UntypedNodeCommonFields> {
+        match self.lexer.consume(Token::FuncKeyword) {
+            Err(e) => panic!("{}", e.message),
+            _ => (),
+        }
+
+        let identifier = self.parse_identifier();
+        let parameters = self
+            .parse_parameters()
+            .iter()
+            .map(|p| Rc::new(p.clone()))
+            .collect();
+
+        match self.lexer.consume(Token::Arrow) {
+            Err(e) => panic!("{}", e.message),
+            _ => (),
+        }
+
+        let return_type = self.parse_type();
+
+        FunctionDeclaration::<UntypedNodeCommonFields>::new(
+            identifier,
+            return_type,
+            parameters,
+            Rc::new(self.parse_block()),
+        )
+    }
+
+    fn parse_variable_declaration(&mut self) -> VariableDeclaration<UntypedNodeCommonFields> {
+        match self.lexer.consume(Token::LetKeyword) {
+            Err(e) => panic!("{}", e.message),
+            _ => (),
+        }
+
+        let variable_declarator = self.parse_variable_declarator();
+
+        match self.lexer.consume(Token::Equals) {
+            Err(e) => panic!("{}", e.message),
+            _ => (),
+        }
+
+        let initial_value = self.parse_expression(0);
+        if initial_value.is_none() {
+            panic!("Compilation error: unexpected token");
+        }
+
+        match self.lexer.consume(Token::Semicolon) {
+            Err(e) => panic!("{}", e.message),
+            _ => (),
+        }
+
+        VariableDeclaration::<UntypedNodeCommonFields>::new(
+            Rc::new(variable_declarator),
+            initial_value.unwrap(),
+        )
+    }
+
+    fn parse_statement(&mut self) -> Option<Statement<UntypedNodeCommonFields>> {
+        match self.lexer.peek() {
+            Some(Token::LetKeyword) => Some(Statement::Declaration(
+                Declaration::VariableDeclaration(Rc::new(self.parse_variable_declaration())),
+            )),
+            Some(Token::ReturnKeyword) => {
+                todo!("Support return statements")
+                // Some(Statement::ReturnStatement(self.parse_return_statement()))
+            }
             _ => None,
         }
     }
 
-    fn parse_statement(&mut self) -> Option<Node> {
-        match self.lexer.peek() {
-            Some(Token::LetKeyword) => Some(VariableDeclarationStatement::parse(self)),
-            Some(Token::IfKeyword) => Some(IfStatement::parse(self)),
-            Some(Token::ReturnKeyword) => Some(ReturnStatement::parse(self)),
-            _ => None,
+    fn parse_source_file(&mut self) -> SourceFile<UntypedNodeCommonFields> {
+        let mut declarations: Vec<Rc<Declaration<UntypedNodeCommonFields>>> = Vec::new();
+
+        loop {
+            let t = self.lexer.peek();
+            match t {
+                Some(Token::FuncKeyword) => declarations.push(Rc::new(
+                    Declaration::FunctionDeclaration(Rc::new(self.parse_function_declaraction())),
+                )),
+                None => {
+                    // EOF
+                    break;
+                }
+                _ => panic!("Compilation error: unexpected token"),
+            }
         }
+
+        SourceFile::new(declarations)
+    }
+
+    /// Parses a file and returns a [Node::SourceFile]. This is the entry point for parsing an
+    /// entire file.
+    pub fn parse(&mut self) -> Node<UntypedNodeCommonFields> {
+        Node::SourceFile(Rc::new(self.parse_source_file()))
     }
 }
 
