@@ -6,6 +6,8 @@ description = "Learning how to build a compiler in Rust"
 edition = "2018"
 
 [dependencies]
+clap = { version = "3.0.14", features = ["derive"] }
 dishsoap-lexer = { path = "../lexer" }
 dishsoap-parser = { path = "../parser" }
-llvm-sys = { version = "110.0.1" }
+llvm-sys = { version = "130" }
+serial_test = { version = "0.6.0" }

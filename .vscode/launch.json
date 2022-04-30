@@ -1,0 +1,70 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug executable 'dishsoap-compiler'",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin=dishsoap-compiler",
+          "--package=dishsoap-compiler"
+        ],
+        "filter": {
+          "name": "dishsoap-compiler",
+          "kind": "bin"
+        }
+      },
+      "args": ["input.ds"],
+      "cwd": "${workspaceFolder}/compiler"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in executable 'dishsoap-compiler'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--bin=dishsoap-compiler",
+          "--package=dishsoap-compiler"
+        ],
+        "filter": {
+          "name": "dishsoap-compiler",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in library 'dishsoap-lexer'",
+      "cargo": {
+        "args": ["test", "--no-run", "--lib", "--package=dishsoap-lexer"],
+        "filter": {
+          "name": "dishsoap-lexer",
+          "kind": "lib"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in library 'dishsoap-parser'",
+      "cargo": {
+        "args": ["test", "--no-run", "--lib", "--package=dishsoap-parser"],
+        "filter": {
+          "name": "dishsoap-parser",
+          "kind": "lib"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

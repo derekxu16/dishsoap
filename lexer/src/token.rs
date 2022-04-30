@@ -32,8 +32,11 @@ pub enum Token {
     #[token("]")]
     BracketClose,
 
-    #[token("=>")]
+    #[token("->")]
     Arrow,
+
+    #[token("=>")]
+    FatArrow,
 
     #[regex("[a-zA-Z_$][a-zA-Z0-9_$]*")]
     Identifier,
@@ -57,6 +60,12 @@ pub enum Token {
     ReturnKeyword,
 
     // Literals
+    #[token("true")]
+    TrueKeyword,
+
+    #[token("false")]
+    FalseKeyword,
+
     #[regex("0[xX][0-9a-fA-F]+")]
     HexLiteral,
 
@@ -71,13 +80,16 @@ pub enum Token {
     StringLiteral,
 
     // Types
-    #[token("int")]
-    IntKeyword,
+    #[token("P_unit")]
+    UnitPrimitiveKeyword,
+
+    #[token("P_bool")]
+    BoolPrimitiveKeyword,
+
+    #[token("P_i32")]
+    I32PrimitiveKeyword,
 
     // Operators
-    #[token("void")]
-    VoidKeyword,
-
     #[token("++")]
     OperatorIncrement,
 
@@ -153,7 +165,10 @@ pub enum Token {
     #[token("=")]
     Equals,
 
-    #[error]
     #[regex(r"[ \t\n\f]+", logos::skip)]
+    #[regex(r"//.*[\n\r]", logos::skip)]
+    Skip,
+
+    #[error]
     UnexpectedToken,
 }

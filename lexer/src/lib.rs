@@ -3,6 +3,13 @@ mod token;
 pub use self::token::Token;
 pub use logos::Logos;
 
+#[derive(PartialEq, Eq)]
+pub struct LexerError {
+    pub message: String,
+}
+
+pub type LexerResult<'a, T> = Result<T, LexerError>;
+
 pub struct Lexer<'a> {
     logos_lexer: logos::Lexer<'a, Token>,
     peeked_value: Option<Option<Token>>,
@@ -18,7 +25,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    pub fn next(&mut self) -> Option<Token> {
+    pub fn pop(&mut self) -> Option<Token> {
         match self.peeked_value {
             Some(t) => {
                 self.peeked_value = None;
@@ -47,14 +54,18 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    pub fn consume(&mut self, token: Token) {
-        let consumed: Option<Token> = self.next();
+    pub fn consume(&mut self, token: Token) -> LexerResult<Token> {
+        let consumed: Option<Token> = self.pop();
         if consumed != Some(token) {
-            // TODO: Add line / character numbers to compilation errors.
-            panic!(
-                "Compilation error: expected {:?}, but found {:?}",
-                token, consumed
-            );
+            Err(LexerError {
+                message: format!(
+                    "Compilation error: expected {:?}, but found {:?}",
+                    token, consumed
+                )
+                .to_owned(),
+            })
+        } else {
+            Ok(consumed.unwrap())
         }
     }
 }

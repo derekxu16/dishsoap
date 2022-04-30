@@ -3,231 +3,333 @@ use crate::*;
 mod tests {
     use super::*;
 
-    #[test]
-    fn create_parser() {
-        let mut parser = Parser::new("");
-        let output: Node = parser.parse();
-        assert_eq!(output, SourceFile::new(Vec::new()));
+    fn define_test_body(body: Rc<Block<UntypedNodeCommonFields>>) -> Node<UntypedNodeCommonFields> {
+        Node::SourceFile(Rc::new(SourceFile::new(vec![Rc::new(
+            Declaration::FunctionDeclaration(Rc::new(
+                FunctionDeclaration::<UntypedNodeCommonFields>::new(
+                    Identifier::new("test".to_owned()),
+                    Type::TypeLiteral(TypeLiteral::I32Type),
+                    vec![],
+                    body,
+                ),
+            )),
+        )])))
     }
 
-    fn define_main_body(body: Node) -> Node {
-        SourceFile::new(vec![FunctionDeclarationStatement::new(
-            Node::Identifier(Identifier {
-                name: "main".to_owned(),
-            }),
-            Node::TypeLiteral(TypeLiteral::Int),
-            vec![],
-            body,
-        )])
+    fn parse(source: &str) -> Node<UntypedNodeCommonFields> {
+        let mut parser = Parser::new(source);
+        let output = parser.parse_source_file();
+        Node::SourceFile(Rc::new(output))
+    }
+
+    #[test]
+    fn prefix_expression_not() {
+        let sf_node = parse(test_inputs::PREFIX_OPERATION_NOT);
+        assert_eq!(
+            sf_node,
+            Node::SourceFile(Rc::new(SourceFile::new(vec![Rc::new(
+                Declaration::FunctionDeclaration(Rc::new(FunctionDeclaration::<
+                    UntypedNodeCommonFields,
+                >::new(
+                    Identifier::new("test".to_owned()),
+                    Type::TypeLiteral(TypeLiteral::BoolType),
+                    vec![],
+                    Rc::new(Block::new_with_final_expression(
+                        vec![],
+                        Expression::PrefixExpression(Rc::new(PrefixExpression::<
+                            UntypedNodeCommonFields,
+                        >::new(
+                            PrefixOperator::Bang,
+                            Expression::BooleanLiteral(Rc::new(BooleanLiteral::<
+                                UntypedNodeCommonFields,
+                            >::new(
+                                true
+                            )))
+                        )))
+                    )),
+                )))
+            ),])))
+        );
+    }
+
+    #[test]
+    fn prefix_expression_minus() {
+        let sf_node = parse(test_inputs::PREFIX_OPERATION_MINUS);
+        assert_eq!(
+            sf_node,
+            define_test_body(Rc::new(Block::new_with_final_expression(
+                vec![],
+                Expression::PrefixExpression(Rc::new(
+                    PrefixExpression::<UntypedNodeCommonFields>::new(
+                        PrefixOperator::Minus,
+                        Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
+                            UntypedNodeCommonFields,
+                        >::new(4)))
+                    )
+                ))
+            )))
+        );
     }
 
     #[test]
     fn arithmetic_expressions() {
-        let mut parser = Parser::new("func main(): int { 1; return 0; }");
-        let mut output: Node = parser.parse();
+        let sf_node = parse(test_inputs::ARITHMETIC_OPERATOR_PRECEDENCE);
         assert_eq!(
-            output,
-            define_main_body(Block::new(vec![
-                Node::IntegerLiteral { value: 1 },
-                ReturnStatement::new(Node::IntegerLiteral { value: 0 })
-            ]))
-        );
-
-        parser = Parser::new("func main(): int { 2 + 2 * 2; return 0; }");
-        output = parser.parse();
-        assert_eq!(
-            output,
-            define_main_body(Block::new(vec![
-                Node::BinaryExpression(BinaryExpression {
-                    left: Box::new(Node::IntegerLiteral { value: 2 }),
-                    operator: Box::new(Node::InfixOperator(InfixOperator::Plus)),
-                    right: Box::new(Node::BinaryExpression(BinaryExpression {
-                        left: Box::new(Node::IntegerLiteral { value: 2 }),
-                        operator: Box::new(Node::InfixOperator(InfixOperator::Times)),
-                        right: Box::new(Node::IntegerLiteral { value: 2 }),
-                    })),
-                }),
-                ReturnStatement::new(Node::IntegerLiteral { value: 0 })
-            ]))
-        );
-
-        parser = Parser::new("func main(): int { 2 % 2 + 2; return 0; }");
-        output = parser.parse();
-        assert_eq!(
-            output,
-            define_main_body(Block::new(vec![
-                Node::BinaryExpression(BinaryExpression {
-                    left: Box::new(Node::BinaryExpression(BinaryExpression {
-                        left: Box::new(Node::IntegerLiteral { value: 2 }),
-                        operator: Box::new(Node::InfixOperator(InfixOperator::Modulo)),
-                        right: Box::new(Node::IntegerLiteral { value: 2 }),
-                    })),
-                    operator: Box::new(Node::InfixOperator(InfixOperator::Plus)),
-                    right: Box::new(Node::IntegerLiteral { value: 2 }),
-                }),
-                ReturnStatement::new(Node::IntegerLiteral { value: 0 })
-            ]))
+            sf_node,
+            define_test_body(Rc::new(Block::new_with_final_expression(
+                vec![],
+                Expression::BinaryExpression(Rc::new(
+                    BinaryExpression::<UntypedNodeCommonFields>::new(
+                        Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
+                            UntypedNodeCommonFields,
+                        >::new(2))),
+                        InfixOperator::Plus,
+                        Expression::BinaryExpression(Rc::new(BinaryExpression::<
+                            UntypedNodeCommonFields,
+                        >::new(
+                            Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
+                                UntypedNodeCommonFields,
+                            >::new(
+                                2
+                            ))),
+                            InfixOperator::Times,
+                            Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
+                                UntypedNodeCommonFields,
+                            >::new(
+                                2
+                            ))),
+                        ))),
+                    )
+                ))
+            )))
         );
     }
 
     #[test]
-    fn variable_declarations() {
-        let mut parser = Parser::new("func main(): int { let a: int; return 0; }");
-        let mut output: Node = parser.parse();
+    fn if_expressions() {
+        let sf_node = parse(test_inputs::IF_EXPRESSION);
         assert_eq!(
-            output,
-            define_main_body(Block::new(vec![
-                Node::VariableDeclarationStatement(VariableDeclarationStatement {
-                    variable: Box::new(Node::VariableLike(VariableLike {
-                        identifier: Box::new(Node::Identifier(Identifier {
-                            name: "a".to_owned()
-                        })),
-                        variable_type: Box::new(Node::TypeLiteral(TypeLiteral::Int)),
-                        initial_value: Box::new(None),
-                    }))
-                }),
-                ReturnStatement::new(Node::IntegerLiteral { value: 0 })
-            ]))
-        );
+            sf_node,
+            define_test_body(Rc::new(Block::new_with_final_expression(
+                vec![],
+                Expression::IfExpression(Rc::new(IfExpression::<UntypedNodeCommonFields>::new(
+                    Expression::BinaryExpression(Rc::new(BinaryExpression::<
+                        UntypedNodeCommonFields,
+                    >::new(
+                        Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
+                            UntypedNodeCommonFields,
+                        >::new(1))),
+                        InfixOperator::GreaterThan,
+                        Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
+                            UntypedNodeCommonFields,
+                        >::new(2)))
+                    ))),
+                    Rc::new(Block::new_with_final_expression(
+                        vec![],
+                        Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
+                            UntypedNodeCommonFields,
+                        >::new(3)))
+                    )),
+                    Rc::new(Block::new_with_final_expression(
+                        vec![],
+                        Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
+                            UntypedNodeCommonFields,
+                        >::new(4)))
+                    ))
+                )))
+            )))
+        )
+    }
 
-        parser = Parser::new("func main(): int { let a: int = 5; return 0; }");
-        output = parser.parse();
+    #[test]
+    fn function_call_add() {
+        let sf_node = parse(test_inputs::FUNCTION_CALL_ADD);
         assert_eq!(
-            output,
-            define_main_body(Block::new(vec![
-                Node::VariableDeclarationStatement(VariableDeclarationStatement {
-                    variable: Box::new(Node::VariableLike(VariableLike {
-                        identifier: Box::new(Node::Identifier(Identifier {
-                            name: "a".to_owned()
-                        })),
-                        variable_type: Box::new(Node::TypeLiteral(TypeLiteral::Int)),
-                        initial_value: Box::new(Some(Node::IntegerLiteral { value: 5 })),
-                    }))
-                }),
-                ReturnStatement::new(Node::IntegerLiteral { value: 0 })
-            ]))
+            sf_node,
+            Node::SourceFile(Rc::new(SourceFile::new(vec![
+                Rc::new(Declaration::FunctionDeclaration(Rc::new(
+                    FunctionDeclaration::<UntypedNodeCommonFields>::new(
+                        Identifier::new("add".to_owned()),
+                        Type::TypeLiteral(TypeLiteral::I32Type),
+                        vec![
+                            Rc::new(Parameter::<UntypedNodeCommonFields>::new(Rc::new(
+                                VariableDeclarator::<UntypedNodeCommonFields>::new(
+                                    Identifier::new("a".to_owned()),
+                                    Type::TypeLiteral(TypeLiteral::I32Type),
+                                )
+                            ))),
+                            Rc::new(Parameter::<UntypedNodeCommonFields>::new(Rc::new(
+                                VariableDeclarator::<UntypedNodeCommonFields>::new(
+                                    Identifier::new("b".to_owned()),
+                                    Type::TypeLiteral(TypeLiteral::I32Type),
+                                )
+                            )))
+                        ],
+                        Rc::new(Block::new_with_final_expression(
+                            vec![],
+                            Expression::BinaryExpression(Rc::new(BinaryExpression::<
+                                UntypedNodeCommonFields,
+                            >::new(
+                                Expression::VariableReference(Rc::new(VariableReference::<
+                                    UntypedNodeCommonFields,
+                                >::new(
+                                    Identifier::new("a".to_owned())
+                                ))),
+                                InfixOperator::Plus,
+                                Expression::VariableReference(Rc::new(VariableReference::<
+                                    UntypedNodeCommonFields,
+                                >::new(
+                                    Identifier::new("b".to_owned())
+                                ))),
+                            )))
+                        ))
+                    )
+                ))),
+                Rc::new(Declaration::FunctionDeclaration(Rc::new(
+                    FunctionDeclaration::<UntypedNodeCommonFields>::new(
+                        Identifier::new("test".to_owned(),),
+                        Type::TypeLiteral(TypeLiteral::I32Type),
+                        vec![],
+                        Rc::new(Block::new_with_final_expression(
+                            vec![],
+                            Expression::FunctionCall(Rc::new(FunctionCall::<
+                                UntypedNodeCommonFields,
+                            >::new(
+                                Identifier::new("add".to_owned()),
+                                vec![
+                                    Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
+                                        UntypedNodeCommonFields,
+                                    >::new(
+                                        11
+                                    ))),
+                                    Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
+                                        UntypedNodeCommonFields,
+                                    >::new(
+                                        22
+                                    )))
+                                ],
+                            )))
+                        ))
+                    )
+                ),)),
+            ])))
         );
+    }
 
-        parser = Parser::new("func main(): int { let a: int = b; return 0; }");
-        output = parser.parse();
+    #[test]
+    fn variable_references() {
+        let sf_node = parse(test_inputs::VARIABLE_REFERENCE);
         assert_eq!(
-            output,
-            define_main_body(Block::new(vec![
-                Node::VariableDeclarationStatement(VariableDeclarationStatement {
-                    variable: Box::new(Node::VariableLike(VariableLike {
-                        identifier: Box::new(Node::Identifier(Identifier {
-                            name: "a".to_owned()
-                        })),
-                        variable_type: Box::new(Node::TypeLiteral(TypeLiteral::Int)),
-                        initial_value: Box::new(Some(VariableReference::new(Identifier::new(
-                            "b".to_owned()
-                        )))),
-                    }))
-                }),
-                ReturnStatement::new(Node::IntegerLiteral { value: 0 })
-            ]))
+            sf_node,
+            define_test_body(Rc::new(Block::new_with_final_expression(
+                vec![
+                    Statement::Declaration(Declaration::VariableDeclaration(Rc::new(
+                        VariableDeclaration::<UntypedNodeCommonFields>::new(
+                            Rc::new(VariableDeclarator::<UntypedNodeCommonFields>::new(
+                                Identifier::new("a".to_owned()),
+                                Type::TypeLiteral(TypeLiteral::I32Type)
+                            )),
+                            Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
+                                UntypedNodeCommonFields,
+                            >::new(
+                                10
+                            )))
+                        )
+                    ))),
+                    Statement::Declaration(Declaration::VariableDeclaration(Rc::new(
+                        VariableDeclaration::<UntypedNodeCommonFields>::new(
+                            Rc::new(VariableDeclarator::<UntypedNodeCommonFields>::new(
+                                Identifier::new("b".to_owned()),
+                                Type::TypeLiteral(TypeLiteral::I32Type)
+                            )),
+                            Expression::VariableReference(Rc::new(VariableReference::<
+                                UntypedNodeCommonFields,
+                            >::new(
+                                Identifier::new("a".to_owned())
+                            )))
+                        )
+                    ))),
+                ],
+                Expression::VariableReference(Rc::new(
+                    VariableReference::<UntypedNodeCommonFields>::new(Identifier::new(
+                        "b".to_owned()
+                    ))
+                ))
+            )))
         );
+    }
+
+    #[test]
+    fn variable_initialization_int() {
+        let sf_node = parse(test_inputs::VARIABLE_INITIALIZATION_INT);
+        assert_eq!(
+            sf_node,
+            define_test_body(Rc::new(Block::new_with_final_expression(
+                vec![Statement::Declaration(Declaration::VariableDeclaration(
+                    Rc::new(VariableDeclaration::<UntypedNodeCommonFields>::new(
+                        Rc::new(VariableDeclarator::<UntypedNodeCommonFields>::new(
+                            Identifier::new("x".to_owned()),
+                            Type::TypeLiteral(TypeLiteral::I32Type)
+                        )),
+                        Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
+                            UntypedNodeCommonFields,
+                        >::new(1)))
+                    ))
+                ))],
+                Expression::VariableReference(Rc::new(
+                    VariableReference::<UntypedNodeCommonFields>::new(Identifier::new(
+                        "x".to_owned()
+                    ))
+                ))
+            )))
+        )
     }
 
     #[test]
     fn function_declarations() {
-        let mut parser = Parser::new("func a(b: int, c: int) : int { return b + c; }");
-        let output = parser.parse();
+        let sf_node = parse(test_inputs::FUNCTION_DECLARATION_ADD);
         assert_eq!(
-            output,
-            SourceFile::new(vec![FunctionDeclarationStatement::new(
-                Node::Identifier(Identifier {
-                    name: "a".to_owned()
-                }),
-                Node::TypeLiteral(TypeLiteral::Int),
-                vec![
-                    Box::new(Node::VariableLike(VariableLike {
-                        identifier: Box::new(Node::Identifier(Identifier {
-                            name: "b".to_owned()
-                        })),
-                        variable_type: Box::new(Node::TypeLiteral(TypeLiteral::Int)),
-                        initial_value: Box::new(None),
-                    })),
-                    Box::new(Node::VariableLike(VariableLike {
-                        identifier: Box::new(Node::Identifier(Identifier {
-                            name: "c".to_owned()
-                        })),
-                        variable_type: Box::new(Node::TypeLiteral(TypeLiteral::Int)),
-                        initial_value: Box::new(None),
-                    }))
-                ],
-                Block::new(vec![ReturnStatement::new(Node::BinaryExpression(
-                    BinaryExpression {
-                        left: Box::new(VariableReference::new(Identifier::new("b".to_owned()))),
-                        operator: Box::new(Node::InfixOperator(InfixOperator::Plus)),
-                        right: Box::new(VariableReference::new(Identifier::new("c".to_owned()))),
-                    }
-                ))])
-            ),])
-        );
-    }
-
-    #[test]
-    fn function_calls() {
-        let mut parser = Parser::new("func main(): int { a(b + 2); return 0; }");
-        let output: Node = parser.parse();
-        assert_eq!(
-            output,
-            define_main_body(Block::new(vec![
-                FunctionCall::new(
-                    Identifier::new("a".to_owned()),
-                    vec![Node::BinaryExpression(BinaryExpression {
-                        left: Box::new(VariableReference::new(Identifier::new("b".to_owned()))),
-                        operator: Box::new(Node::InfixOperator(InfixOperator::Plus)),
-                        right: Box::new(Node::IntegerLiteral { value: 2 }),
-                    })],
-                ),
-                ReturnStatement::new(Node::IntegerLiteral { value: 0 })
-            ]))
-        );
-    }
-
-    #[test]
-    fn if_statements() {
-        let mut parser = Parser::new(
-            "func dp(n: int): int {
-                if (n == 0) {
-                    return -1;
-                }
-                return n;
-            }",
-        );
-        let output: Node = parser.parse();
-        assert_eq!(
-            output,
-            SourceFile::new(vec![FunctionDeclarationStatement::new(
-                Node::Identifier(Identifier {
-                    name: "dp".to_owned(),
-                }),
-                Node::TypeLiteral(TypeLiteral::Int),
-                vec![Box::new(Node::VariableLike(VariableLike {
-                    identifier: Box::new(Node::Identifier(Identifier {
-                        name: "n".to_owned()
-                    })),
-                    variable_type: Box::new(Node::TypeLiteral(TypeLiteral::Int)),
-                    initial_value: Box::new(None),
-                }))],
-                Block::new(vec![
-                    IfStatement::new(
-                        BinaryExpression::new(
-                            VariableReference::new(Identifier::new("n".to_owned())),
-                            InfixOperator::new(InfixOperator::Equals),
-                            Node::IntegerLiteral { value: 0 }
-                        ),
-                        Block::new(vec![ReturnStatement::new(PrefixExpression::new(
-                            PrefixOperator::new(PrefixOperator::Minus),
-                            Node::IntegerLiteral { value: 1 }
-                        ))]),
-                        None
-                    ),
-                    ReturnStatement::new(VariableReference::new(Identifier::new("n".to_owned())),)
-                ])
-            )])
+            sf_node,
+            Node::SourceFile(Rc::new(SourceFile::new(vec![Rc::new(
+                Declaration::FunctionDeclaration(Rc::new(FunctionDeclaration::<
+                    UntypedNodeCommonFields,
+                >::new(
+                    Identifier::new("add".to_owned()),
+                    Type::TypeLiteral(TypeLiteral::I32Type),
+                    vec![
+                        Rc::new(Parameter::<UntypedNodeCommonFields>::new(Rc::new(
+                            VariableDeclarator::<UntypedNodeCommonFields>::new(
+                                Identifier::new("a".to_owned()),
+                                Type::TypeLiteral(TypeLiteral::I32Type),
+                            )
+                        ))),
+                        Rc::new(Parameter::<UntypedNodeCommonFields>::new(Rc::new(
+                            VariableDeclarator::<UntypedNodeCommonFields>::new(
+                                Identifier::new("b".to_owned()),
+                                Type::TypeLiteral(TypeLiteral::I32Type),
+                            )
+                        )))
+                    ],
+                    Rc::new(Block::new_with_final_expression(
+                        vec![],
+                        Expression::BinaryExpression(Rc::new(BinaryExpression::<
+                            UntypedNodeCommonFields,
+                        >::new(
+                            Expression::VariableReference(Rc::new(VariableReference::<
+                                UntypedNodeCommonFields,
+                            >::new(
+                                Identifier::new("a".to_owned())
+                            ))),
+                            InfixOperator::Plus,
+                            Expression::VariableReference(Rc::new(VariableReference::<
+                                UntypedNodeCommonFields,
+                            >::new(
+                                Identifier::new("b".to_owned())
+                            ))),
+                        )))
+                    ))
+                )))
+            )])))
         );
     }
 }
