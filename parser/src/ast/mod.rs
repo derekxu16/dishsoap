@@ -1,5 +1,4 @@
 mod block;
-mod declaration;
 mod expression;
 mod identifier;
 mod node;
@@ -12,7 +11,6 @@ mod r#type;
 mod variable_declarator;
 
 pub use self::block::*;
-pub use self::declaration::*;
 pub use self::expression::*;
 pub use self::identifier::*;
 pub use self::node::*;
