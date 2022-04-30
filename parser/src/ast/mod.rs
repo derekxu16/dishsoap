@@ -1,7 +1,6 @@
 mod block;
 mod declaration;
 mod expression;
-mod function_type;
 mod identifier;
 mod node;
 mod operator;
@@ -10,20 +9,17 @@ mod parser_result;
 mod source_file;
 mod statement;
 mod r#type;
-mod type_literal;
 mod variable_declarator;
 
 pub use self::block::*;
 pub use self::declaration::*;
 pub use self::expression::*;
-pub use self::function_type::*;
 pub use self::identifier::*;
 pub use self::node::*;
 pub use self::operator::*;
 pub use self::parameter::*;
 pub use self::parser_result::*;
 pub use self::source_file::*;
-pub use self::type_literal::*;
 pub use self::variable_declarator::*;
 pub use r#type::*;
 pub use statement::*;
