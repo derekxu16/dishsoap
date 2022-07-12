@@ -1,4 +1,4 @@
-use std::{ops::Deref, rc::Rc};
+use std::{collections::HashMap, ops::Deref, rc::Rc};
 
 use dishsoap_parser::ast::*;
 
@@ -8,6 +8,11 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
     fn process_boolean_literal(&mut self, value: &bool) -> BooleanLiteral<ReturnTypeCommonFields>;
 
     fn process_integer_literal(&mut self, value: &i32) -> IntegerLiteral<ReturnTypeCommonFields>;
+
+    fn process_record_literal(
+        &mut self,
+        fields: &HashMap<String, Expression<InputTypeCommonFields>>,
+    ) -> RecordLiteral<ReturnTypeCommonFields>;
 
     fn process_variable_reference(
         &mut self,
@@ -20,6 +25,13 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
         identifier: &Identifier,
         arguments: Vec<Expression<ReturnTypeCommonFields>>,
     ) -> FunctionCall<ReturnTypeCommonFields>;
+
+    fn process_if_expression(
+        &mut self,
+        condition: &Expression<ReturnTypeCommonFields>,
+        then_block: &Rc<Block<ReturnTypeCommonFields>>,
+        else_block: &Rc<Block<ReturnTypeCommonFields>>,
+    ) -> IfExpression<ReturnTypeCommonFields>;
 
     fn process_prefix_expression(
         &mut self,
@@ -34,13 +46,6 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
         right: &Expression<ReturnTypeCommonFields>,
     ) -> BinaryExpression<ReturnTypeCommonFields>;
 
-    fn process_if_expression(
-        &mut self,
-        condition: &Expression<ReturnTypeCommonFields>,
-        then_block: &Rc<Block<ReturnTypeCommonFields>>,
-        else_block: &Rc<Block<ReturnTypeCommonFields>>,
-    ) -> IfExpression<ReturnTypeCommonFields>;
-
     fn process_expression(
         &mut self,
         expression: &Expression<InputTypeCommonFields>,
@@ -54,6 +59,9 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
             }
             Expression::IntegerLiteral(i) => {
                 Expression::IntegerLiteral(Rc::new(self.process_integer_literal(&i.value)))
+            }
+            Expression::RecordLiteral(r) => {
+                Expression::RecordLiteral(Rc::new(self.process_record_literal(&r.fields)))
             }
             Expression::VariableReference(r) => {
                 Expression::VariableReference(Rc::new(self.process_variable_reference(&r)))
@@ -72,6 +80,26 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
                     &c,
                     &c.identifier,
                     processed_arguments,
+                )))
+            }
+            Expression::IfExpression(s) => {
+                let processed_condition = match self.visit(&Node::Expression(s.condition.clone())) {
+                    Node::Expression(e) => e,
+                    _ => unreachable!(),
+                };
+                let processed_then_block = match self.visit(&Node::Block(s.then_block.clone())) {
+                    Node::Block(b) => b,
+                    _ => unreachable!(),
+                };
+                let processed_else_block = match self.visit(&Node::Block(s.else_block.clone())) {
+                    Node::Block(b) => b,
+                    _ => unreachable!(),
+                };
+
+                Expression::IfExpression(Rc::new(self.process_if_expression(
+                    &processed_condition,
+                    &processed_then_block,
+                    &processed_else_block,
                 )))
             }
             Expression::PrefixExpression(e) => {
@@ -98,26 +126,6 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
                     &Rc::new(processed_left),
                     &e.operator,
                     &Rc::new(processed_right),
-                )))
-            }
-            Expression::IfExpression(s) => {
-                let processed_condition = match self.visit(&Node::Expression(s.condition.clone())) {
-                    Node::Expression(e) => e,
-                    _ => unreachable!(),
-                };
-                let processed_then_block = match self.visit(&Node::Block(s.then_block.clone())) {
-                    Node::Block(b) => b,
-                    _ => unreachable!(),
-                };
-                let processed_else_block = match self.visit(&Node::Block(s.else_block.clone())) {
-                    Node::Block(b) => b,
-                    _ => unreachable!(),
-                };
-
-                Expression::IfExpression(Rc::new(self.process_if_expression(
-                    &processed_condition,
-                    &processed_then_block,
-                    &processed_else_block,
                 )))
             }
         }
@@ -363,6 +371,12 @@ pub trait PreOrderVisitor<InputTypeCommonFields: Clone> {
     ) -> () {
     }
 
+    fn process_record_literal(
+        &mut self,
+        _record_literal: &RecordLiteral<InputTypeCommonFields>,
+    ) -> () {
+    }
+
     fn process_variable_reference(
         &mut self,
         _variable_reference: &VariableReference<InputTypeCommonFields>,
@@ -372,6 +386,13 @@ pub trait PreOrderVisitor<InputTypeCommonFields: Clone> {
     fn process_function_call(
         &mut self,
         _function_call: &FunctionCall<InputTypeCommonFields>,
+    ) -> PreOrderVisitorResponse {
+        *PreOrderVisitorResponse::new(false)
+    }
+
+    fn process_if_expression(
+        &mut self,
+        _if_expression: &IfExpression<InputTypeCommonFields>,
     ) -> PreOrderVisitorResponse {
         *PreOrderVisitorResponse::new(false)
     }
@@ -390,24 +411,25 @@ pub trait PreOrderVisitor<InputTypeCommonFields: Clone> {
         *PreOrderVisitorResponse::new(false)
     }
 
-    fn process_if_expression(
-        &mut self,
-        _if_expression: &IfExpression<InputTypeCommonFields>,
-    ) -> PreOrderVisitorResponse {
-        *PreOrderVisitorResponse::new(false)
-    }
-
     fn process_expression(&mut self, expression: &Expression<InputTypeCommonFields>) -> () {
         match expression {
             Expression::UnitLiteral(_) => (),
             Expression::BooleanLiteral(b) => self.process_boolean_literal(&b),
             Expression::IntegerLiteral(i) => self.process_integer_literal(&i),
+            Expression::RecordLiteral(r) => self.process_record_literal(&r),
             Expression::VariableReference(r) => self.process_variable_reference(&r),
             Expression::FunctionCall(c) => {
                 if !self.process_function_call(&c).should_stop_traversing {
                     c.arguments
                         .iter()
                         .for_each(|a| self.visit(&Node::Expression(a.deref().clone())));
+                }
+            }
+            Expression::IfExpression(e) => {
+                if !self.process_if_expression(&e).should_stop_traversing {
+                    self.visit(&Node::Expression(e.condition.clone()));
+                    self.visit(&Node::Block(e.then_block.clone()));
+                    self.visit(&Node::Block(e.else_block.clone()));
                 }
             }
             Expression::PrefixExpression(e) => {
@@ -419,13 +441,6 @@ pub trait PreOrderVisitor<InputTypeCommonFields: Clone> {
                 if !self.process_binary_expression(&e).should_stop_traversing {
                     self.visit(&Node::Expression(e.left.clone()));
                     self.visit(&Node::Expression(e.right.clone()));
-                }
-            }
-            Expression::IfExpression(e) => {
-                if !self.process_if_expression(&e).should_stop_traversing {
-                    self.visit(&Node::Expression(e.condition.clone()));
-                    self.visit(&Node::Block(e.then_block.clone()));
-                    self.visit(&Node::Block(e.else_block.clone()));
                 }
             }
         };

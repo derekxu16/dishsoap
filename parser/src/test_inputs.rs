@@ -59,6 +59,13 @@ func test() -> P_i32 {
 }
 ";
 
+pub const VARIABLE_INITIALIZATION_RECORD_TYPE: &str = "
+func test() -> P_i32 {
+    let x: {a: P_i32, b: P_i32} = {a: 11, b: 22};
+    0
+}
+";
+
 pub const VARIABLE_INITIALIZATION_INT: &str = "
 func test() -> P_i32 {
     let x: P_i32 = 1;

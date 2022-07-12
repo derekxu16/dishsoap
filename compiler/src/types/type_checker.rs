@@ -29,6 +29,13 @@ impl PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for TypeCh
         IntegerLiteral::<TypedNodeCommonFields>::new(*value)
     }
 
+    fn process_record_literal(
+        &mut self,
+        _fields: &std::collections::HashMap<String, Expression<UntypedNodeCommonFields>>,
+    ) -> RecordLiteral<TypedNodeCommonFields> {
+        unimplemented!()
+    }
+
     fn process_variable_reference(
         &mut self,
         variable_reference: &VariableReference<UntypedNodeCommonFields>,
