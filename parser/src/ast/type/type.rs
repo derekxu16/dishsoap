@@ -1,9 +1,10 @@
 use std::rc::Rc;
 
-use crate::{FunctionType, TypeLiteral};
+use crate::{FunctionType, RecordType, TypeLiteral};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
-    FunctionType(Rc<FunctionType>),
     TypeLiteral(TypeLiteral),
+    RecordType(Rc<RecordType>),
+    FunctionType(Rc<FunctionType>),
 }

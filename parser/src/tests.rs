@@ -260,6 +260,50 @@ mod tests {
     }
 
     #[test]
+    fn variable_initialization_record_type() {
+        let sf_node = parse(test_inputs::VARIABLE_INITIALIZATION_RECORD_TYPE);
+        assert_eq!(
+            sf_node,
+            define_test_body(Rc::new(Block::new_with_final_expression(
+                vec![Statement::Declaration(Declaration::VariableDeclaration(
+                    Rc::new(VariableDeclaration::<UntypedNodeCommonFields>::new(
+                        Rc::new(VariableDeclarator::<UntypedNodeCommonFields>::new(
+                            Identifier::new("x".to_owned()),
+                            Type::RecordType(Rc::new(RecordType::new(HashMap::from([
+                                ("a".to_string(), Type::TypeLiteral(TypeLiteral::I32Type)),
+                                ("b".to_string(), Type::TypeLiteral(TypeLiteral::I32Type))
+                            ]))))
+                        )),
+                        Expression::RecordLiteral(Rc::new(
+                            RecordLiteral::<UntypedNodeCommonFields>::new(HashMap::from([
+                                (
+                                    "a".to_string(),
+                                    Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
+                                        UntypedNodeCommonFields,
+                                    >::new(
+                                        11
+                                    )))
+                                ),
+                                (
+                                    "b".to_string(),
+                                    Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
+                                        UntypedNodeCommonFields,
+                                    >::new(
+                                        22
+                                    )))
+                                )
+                            ]))
+                        ))
+                    ))
+                ))],
+                Expression::IntegerLiteral(Rc::new(
+                    IntegerLiteral::<UntypedNodeCommonFields>::new(0)
+                ))
+            )))
+        )
+    }
+
+    #[test]
     fn variable_initialization_int() {
         let sf_node = parse(test_inputs::VARIABLE_INITIALIZATION_INT);
         assert_eq!(

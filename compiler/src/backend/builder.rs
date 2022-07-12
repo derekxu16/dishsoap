@@ -100,8 +100,9 @@ impl<'a> Builder<'a> {
 
     pub fn lower_type(&mut self, r#type: &Type) -> LLVMTypeRef {
         match r#type {
-            Type::FunctionType(_t) => unimplemented!(),
             Type::TypeLiteral(t) => self.lower_type_literal(t),
+            Type::RecordType(_t) => unimplemented!(),
+            Type::FunctionType(_t) => unimplemented!(),
         }
     }
 
@@ -127,6 +128,13 @@ impl<'a> Builder<'a> {
                 value,
             } => unsafe { LLVMConstInt(LLVMInt32Type(), *value as u64, true.into()) },
         }
+    }
+
+    pub fn lower_record_literal(
+        &self,
+        _record_literal: &RecordLiteral<TypedNodeCommonFields>,
+    ) -> LLVMValueRef {
+        unimplemented!()
     }
 
     pub fn lower_variable_reference(
@@ -366,11 +374,12 @@ impl<'a> Builder<'a> {
             Expression::UnitLiteral(_u) => unimplemented!(),
             Expression::BooleanLiteral(b) => self.lower_boolean_literal(b),
             Expression::IntegerLiteral(i) => self.lower_integer_literal(i),
+            Expression::RecordLiteral(r) => self.lower_record_literal(r),
             Expression::VariableReference(r) => self.lower_variable_reference(r),
             Expression::FunctionCall(c) => self.lower_function_call(c),
+            Expression::IfExpression(e) => self.lower_if_expression(e),
             Expression::PrefixExpression(e) => self.lower_prefix_expression(e),
             Expression::BinaryExpression(e) => self.lower_binary_expression(e),
-            Expression::IfExpression(e) => self.lower_if_expression(e),
         }
     }
 }
