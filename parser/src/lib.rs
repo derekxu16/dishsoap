@@ -93,36 +93,20 @@ impl<'ast> Parser<'ast> {
         }
     }
 
-    fn parse_boolean_literal(&mut self) -> Option<Expression<UntypedNodeCommonFields>> {
+    fn parse_boolean_literal(&mut self) -> BooleanLiteral<UntypedNodeCommonFields> {
         match self.lexer.pop() {
-            Some(Token::TrueKeyword) => {
-                Some(Expression::BooleanLiteral(Rc::new(BooleanLiteral::<
-                    UntypedNodeCommonFields,
-                >::new(
-                    true
-                ))))
-            }
-            Some(Token::FalseKeyword) => {
-                Some(Expression::BooleanLiteral(Rc::new(BooleanLiteral::<
-                    UntypedNodeCommonFields,
-                >::new(
-                    false
-                ))))
-            }
+            Some(Token::TrueKeyword) => BooleanLiteral::<UntypedNodeCommonFields>::new(true),
+            Some(Token::FalseKeyword) => BooleanLiteral::<UntypedNodeCommonFields>::new(false),
             _ => panic!("Compilation error: unexpected token"),
         }
     }
 
-    fn parse_integer_literal(&mut self) -> Option<Expression<UntypedNodeCommonFields>> {
+    fn parse_integer_literal(&mut self) -> IntegerLiteral<UntypedNodeCommonFields> {
         match self.lexer.consume(Token::IntegerLiteral) {
             Err(e) => panic!("{}", e.message),
             _ => {
                 let value: String = self.lexer.slice().to_owned();
-                Some(Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
-                    UntypedNodeCommonFields,
-                >::new(
-                    value.parse::<i32>().unwrap(),
-                ))))
+                IntegerLiteral::<UntypedNodeCommonFields>::new(value.parse::<i32>().unwrap())
             }
         }
     }
@@ -164,21 +148,17 @@ impl<'ast> Parser<'ast> {
     /**
      * Tries to parse a VariableReference or FunctionCall, returns None if unsuccessful.
      */
-    fn parse_reference(&mut self) -> Option<Expression<UntypedNodeCommonFields>> {
+    fn parse_reference(&mut self) -> Expression<UntypedNodeCommonFields> {
         let identifier = self.parse_identifier();
         match self.lexer.peek() {
             Some(Token::ParenOpen) => {
                 let arguments = self.parse_arguments();
-                Some(Expression::FunctionCall(Rc::new(FunctionCall::<
-                    UntypedNodeCommonFields,
-                >::new(
-                    identifier, arguments
-                ))))
+                Expression::FunctionCall(Rc::new(FunctionCall::<UntypedNodeCommonFields>::new(
+                    identifier, arguments,
+                )))
             }
-            _ => Some(Expression::<UntypedNodeCommonFields>::VariableReference(
-                Rc::new(VariableReference::<UntypedNodeCommonFields>::new(
-                    identifier,
-                )),
+            _ => Expression::<UntypedNodeCommonFields>::VariableReference(Rc::new(
+                VariableReference::<UntypedNodeCommonFields>::new(identifier),
             )),
         }
     }
@@ -272,12 +252,16 @@ impl<'ast> Parser<'ast> {
     // http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/
     fn parse_expression(&mut self, precedence: i32) -> Option<Expression<UntypedNodeCommonFields>> {
         let mut left = match self.lexer.peek() {
-            Some(Token::TrueKeyword) | Some(Token::FalseKeyword) => self.parse_boolean_literal(),
-            Some(Token::IntegerLiteral) => self.parse_integer_literal(),
+            Some(Token::TrueKeyword) | Some(Token::FalseKeyword) => Some(
+                Expression::BooleanLiteral(Rc::new(self.parse_boolean_literal())),
+            ),
+            Some(Token::IntegerLiteral) => Some(Expression::IntegerLiteral(Rc::new(
+                self.parse_integer_literal(),
+            ))),
             Some(Token::BraceOpen) => Some(Expression::RecordLiteral(Rc::new(
                 self.parse_record_literal(),
             ))),
-            Some(Token::Identifier) => self.parse_reference(),
+            Some(Token::Identifier) => Some(self.parse_reference()),
             Some(Token::IfKeyword) => Some(Expression::IfExpression(Rc::new(
                 self.parse_if_expression(),
             ))),
