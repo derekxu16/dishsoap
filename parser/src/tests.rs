@@ -271,7 +271,7 @@ mod tests {
                             Identifier::new("x".to_owned()),
                             Type::RecordType(Rc::new(RecordType::new(HashMap::from([
                                 ("a".to_string(), Type::TypeLiteral(TypeLiteral::I32Type)),
-                                ("b".to_string(), Type::TypeLiteral(TypeLiteral::I32Type))
+                                ("b".to_string(), Type::TypeLiteral(TypeLiteral::BoolType))
                             ]))))
                         )),
                         Expression::RecordLiteral(Rc::new(
@@ -286,10 +286,10 @@ mod tests {
                                 ),
                                 (
                                     "b".to_string(),
-                                    Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
+                                    Expression::BooleanLiteral(Rc::new(BooleanLiteral::<
                                         UntypedNodeCommonFields,
                                     >::new(
-                                        22
+                                        true
                                     )))
                                 )
                             ]))

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{Expression, Type, TypeLiteral, TypedNodeCommonFields, UntypedNodeCommonFields};
+use crate::{Expression, Type, TypedNodeCommonFields, UntypedNodeCommonFields};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RecordLiteral<CommonFields: Clone> {
@@ -18,9 +18,9 @@ impl RecordLiteral<UntypedNodeCommonFields> {
 }
 
 impl RecordLiteral<TypedNodeCommonFields> {
-    pub fn new(fields: HashMap<String, Expression<TypedNodeCommonFields>>) -> Self {
+    pub fn new(r#type: Type, fields: HashMap<String, Expression<TypedNodeCommonFields>>) -> Self {
         RecordLiteral::<TypedNodeCommonFields> {
-            common_fields: TypedNodeCommonFields::new(Type::TypeLiteral(TypeLiteral::I32Type)),
+            common_fields: TypedNodeCommonFields::new(r#type),
             fields,
         }
     }
