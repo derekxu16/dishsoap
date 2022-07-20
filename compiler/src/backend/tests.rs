@@ -96,7 +96,7 @@ mod tests {
 
     #[test]
     #[serial]
-    fn variable_initialization_int() {
+    fn variable_initializations() {
         let result = interpret(test_inputs::VARIABLE_INITIALIZATION_INT);
         assert_eq!(result, 1);
     }

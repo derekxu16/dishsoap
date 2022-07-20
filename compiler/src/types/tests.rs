@@ -298,7 +298,7 @@ mod tests {
     }
 
     #[test]
-    fn variable_initialization_int() {
+    fn variable_initializations() {
         let sf_node = parse_and_check(test_inputs::VARIABLE_INITIALIZATION_INT);
         assert_eq!(
             sf_node,
