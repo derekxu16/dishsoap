@@ -89,15 +89,8 @@ mod tests {
 
     #[test]
     #[serial]
-    fn variable_references() {
-        let result = interpret(test_inputs::VARIABLE_REFERENCE);
+    fn variable_initializations_and_references() {
+        let result = interpret(test_inputs::VARIABLE_INITIALIZATION_AND_REFERENCE_INT);
         assert_eq!(result, 10);
-    }
-
-    #[test]
-    #[serial]
-    fn variable_initializations() {
-        let result = interpret(test_inputs::VARIABLE_INITIALIZATION_INT);
-        assert_eq!(result, 1);
     }
 }
