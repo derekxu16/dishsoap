@@ -11,19 +11,18 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
 
     fn process_record_literal(
         &mut self,
-        fields: &HashMap<String, Expression<InputTypeCommonFields>>,
+        fields: &HashMap<String, Expression<ReturnTypeCommonFields>>,
     ) -> RecordLiteral<ReturnTypeCommonFields>;
 
     fn process_variable_reference(
         &mut self,
-        _variable_reference: &VariableReference<InputTypeCommonFields>,
+        identifier: &Identifier,
     ) -> VariableReference<ReturnTypeCommonFields>;
 
     fn process_function_call(
         &mut self,
-        function_call: &FunctionCall<InputTypeCommonFields>,
         identifier: &Identifier,
-        arguments: Vec<Expression<ReturnTypeCommonFields>>,
+        arguments: &Vec<Expression<ReturnTypeCommonFields>>,
     ) -> FunctionCall<ReturnTypeCommonFields>;
 
     fn process_if_expression(
@@ -61,11 +60,24 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
                 Expression::IntegerLiteral(Rc::new(self.process_integer_literal(&i.value)))
             }
             Expression::RecordLiteral(r) => {
-                Expression::RecordLiteral(Rc::new(self.process_record_literal(&r.fields)))
+                let processed_fields = r
+                    .fields
+                    .iter()
+                    .map(|(k, v)| {
+                        (
+                            k.clone(),
+                            match self.visit(&Node::Expression(v.clone())) {
+                                Node::Expression(e) => e,
+                                _ => unreachable!(),
+                            },
+                        )
+                    })
+                    .collect();
+                Expression::RecordLiteral(Rc::new(self.process_record_literal(&processed_fields)))
             }
-            Expression::VariableReference(r) => {
-                Expression::VariableReference(Rc::new(self.process_variable_reference(&r)))
-            }
+            Expression::VariableReference(r) => Expression::VariableReference(Rc::new(
+                self.process_variable_reference(&r.identifier),
+            )),
             Expression::FunctionCall(c) => {
                 let processed_arguments = c
                     .arguments
@@ -76,11 +88,9 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
                     })
                     .collect();
 
-                Expression::FunctionCall(Rc::new(self.process_function_call(
-                    &c,
-                    &c.identifier,
-                    processed_arguments,
-                )))
+                Expression::FunctionCall(Rc::new(
+                    self.process_function_call(&c.identifier, &processed_arguments),
+                ))
             }
             Expression::IfExpression(s) => {
                 let processed_condition = match self.visit(&Node::Expression(s.condition.clone())) {
@@ -133,7 +143,6 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
 
     fn process_variable_declarator(
         &mut self,
-        variable_declarator: &Rc<VariableDeclarator<InputTypeCommonFields>>,
         identifier: &Identifier,
         variable_type: &Type,
     ) -> VariableDeclarator<ReturnTypeCommonFields>;
@@ -280,7 +289,7 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
             Node::Type(_) => unreachable!(),
             Node::Expression(e) => Node::Expression(self.process_expression(&e)),
             Node::VariableDeclarator(d) => Node::VariableDeclarator(Rc::new(
-                self.process_variable_declarator(&d, &d.identifier, &d.variable_type),
+                self.process_variable_declarator(&d.identifier, &d.variable_type),
             )),
             Node::Parameter(p) => {
                 let processed_variable_declarator =

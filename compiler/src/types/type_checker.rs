@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::types::environment::{Environment, EnvironmentStack};
@@ -31,31 +32,35 @@ impl PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for TypeCh
 
     fn process_record_literal(
         &mut self,
-        _fields: &std::collections::HashMap<String, Expression<UntypedNodeCommonFields>>,
+        fields: &HashMap<String, Expression<TypedNodeCommonFields>>,
     ) -> RecordLiteral<TypedNodeCommonFields> {
-        unimplemented!()
+        let r#type = Type::RecordType(Rc::new(RecordType::new(
+            fields
+                .iter()
+                .map(|(k, v)| (k.clone(), v.get_type().clone()))
+                .collect(),
+        )));
+        RecordLiteral::<TypedNodeCommonFields>::new(r#type, fields.clone())
     }
 
     fn process_variable_reference(
         &mut self,
-        variable_reference: &VariableReference<UntypedNodeCommonFields>,
+        identifier: &Identifier,
     ) -> VariableReference<TypedNodeCommonFields> {
-        let identifier = variable_reference.identifier.clone();
         VariableReference::<TypedNodeCommonFields>::new(
             self.environment_stack
                 .top()
                 .get(&identifier.name)
                 .unwrap()
                 .clone(),
-            identifier,
+            identifier.clone(),
         )
     }
 
     fn process_function_call(
         &mut self,
-        _function_call: &FunctionCall<UntypedNodeCommonFields>,
         identifier: &Identifier,
-        arguments: Vec<Expression<TypedNodeCommonFields>>,
+        arguments: &Vec<Expression<TypedNodeCommonFields>>,
     ) -> FunctionCall<TypedNodeCommonFields> {
         let signature = match self.environment_stack.top().get(&identifier.name).unwrap() {
             Type::FunctionType(t) => t,
@@ -70,7 +75,7 @@ impl PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for TypeCh
         FunctionCall::<TypedNodeCommonFields>::new(
             signature.return_type.clone(),
             identifier.clone(),
-            arguments,
+            arguments.clone(),
         )
     }
 
@@ -131,7 +136,6 @@ impl PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for TypeCh
 
     fn process_variable_declarator(
         &mut self,
-        _variable_declarator: &Rc<VariableDeclarator<UntypedNodeCommonFields>>,
         identifier: &Identifier,
         variable_type: &Type,
     ) -> VariableDeclarator<TypedNodeCommonFields> {
