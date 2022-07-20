@@ -142,7 +142,7 @@ mod tests {
     }
 
     #[test]
-    fn function_call_add() {
+    fn function_calls() {
         let sf_node = parse(test_inputs::FUNCTION_CALL_ADD);
         assert_eq!(
             sf_node,
