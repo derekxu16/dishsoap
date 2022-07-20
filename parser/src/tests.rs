@@ -217,8 +217,8 @@ mod tests {
     }
 
     #[test]
-    fn variable_references() {
-        let sf_node = parse(test_inputs::VARIABLE_REFERENCE);
+    fn variable_initializations_and_references() {
+        let sf_node = parse(test_inputs::VARIABLE_INITIALIZATION_AND_REFERENCE_INT);
         assert_eq!(
             sf_node,
             define_test_body(Rc::new(Block::new_with_final_expression(
@@ -298,32 +298,6 @@ mod tests {
                 ))],
                 Expression::IntegerLiteral(Rc::new(
                     IntegerLiteral::<UntypedNodeCommonFields>::new(0)
-                ))
-            )))
-        )
-    }
-
-    #[test]
-    fn variable_initialization_int() {
-        let sf_node = parse(test_inputs::VARIABLE_INITIALIZATION_INT);
-        assert_eq!(
-            sf_node,
-            define_test_body(Rc::new(Block::new_with_final_expression(
-                vec![Statement::Declaration(Declaration::VariableDeclaration(
-                    Rc::new(VariableDeclaration::<UntypedNodeCommonFields>::new(
-                        Rc::new(VariableDeclarator::<UntypedNodeCommonFields>::new(
-                            Identifier::new("x".to_owned()),
-                            Type::TypeLiteral(TypeLiteral::I32Type)
-                        )),
-                        Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
-                            UntypedNodeCommonFields,
-                        >::new(1)))
-                    ))
-                ))],
-                Expression::VariableReference(Rc::new(
-                    VariableReference::<UntypedNodeCommonFields>::new(Identifier::new(
-                        "x".to_owned()
-                    ))
                 ))
             )))
         )
