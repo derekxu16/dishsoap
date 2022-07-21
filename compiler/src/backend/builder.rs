@@ -184,6 +184,75 @@ impl<'a> Builder<'a> {
         }
     }
 
+    pub fn lower_if_expression(
+        &mut self,
+        if_expression: &IfExpression<TypedNodeCommonFields>,
+    ) -> LLVMValueRef {
+        match if_expression {
+            IfExpression {
+                common_fields,
+                condition,
+                then_block,
+                else_block,
+            } => unsafe {
+                let function = LLVMGetBasicBlockParent(LLVMGetInsertBlock(*self.builder));
+
+                // The value that this if-expression evaluates to.
+                let result_value = LLVMBuildAlloca(
+                    *self.builder,
+                    self.lower_type(&common_fields.r#type),
+                    string_to_c_string("if_result_temp".to_owned()).as_ptr(),
+                );
+
+                let condition = self.lower_expression(&condition);
+                let then_bb = LLVMCreateBasicBlockInContext(
+                    *self.context,
+                    string_to_c_string("then_block".to_owned()).as_ptr(),
+                );
+                let else_bb = LLVMCreateBasicBlockInContext(
+                    *self.context,
+                    string_to_c_string("else_block".to_owned()).as_ptr(),
+                );
+                let merge_bb = LLVMCreateBasicBlockInContext(
+                    *self.context,
+                    string_to_c_string("merge_block".to_owned()).as_ptr(),
+                );
+                LLVMBuildCondBr(*self.builder, condition, then_bb, else_bb);
+
+                LLVMAppendExistingBasicBlock(function, then_bb);
+                LLVMPositionBuilderAtEnd(*self.builder, then_bb);
+                self.visit(&Node::Block(then_block.clone()));
+                LLVMBuildStore(
+                    *self.builder,
+                    // TODO(derekxu16): This is unsafe.
+                    self.lower_expression(then_block.final_expression.as_ref().unwrap()),
+                    result_value,
+                );
+                LLVMBuildBr(*self.builder, merge_bb);
+
+                LLVMAppendExistingBasicBlock(function, else_bb);
+                LLVMPositionBuilderAtEnd(*self.builder, else_bb);
+                self.visit(&Node::Block(else_block.clone()));
+                LLVMBuildStore(
+                    *self.builder,
+                    // TODO(derekxu16): This is unsafe.
+                    self.lower_expression(else_block.final_expression.as_ref().unwrap()),
+                    result_value,
+                );
+                LLVMBuildBr(*self.builder, merge_bb);
+
+                LLVMAppendExistingBasicBlock(function, merge_bb);
+                LLVMPositionBuilderAtEnd(*self.builder, merge_bb);
+
+                LLVMBuildLoad(
+                    *self.builder,
+                    result_value,
+                    string_to_c_string("load_temp".to_owned()).as_ptr(),
+                )
+            },
+        }
+    }
+
     pub fn lower_prefix_expression(
         &mut self,
         prefix_expression: &PrefixExpression<TypedNodeCommonFields>,
@@ -297,73 +366,11 @@ impl<'a> Builder<'a> {
         }
     }
 
-    pub fn lower_if_expression(
+    pub fn lower_field_access(
         &mut self,
-        if_expression: &IfExpression<TypedNodeCommonFields>,
+        _field_access: &FieldAccess<TypedNodeCommonFields>,
     ) -> LLVMValueRef {
-        match if_expression {
-            IfExpression {
-                common_fields,
-                condition,
-                then_block,
-                else_block,
-            } => unsafe {
-                let function = LLVMGetBasicBlockParent(LLVMGetInsertBlock(*self.builder));
-
-                // The value that this if-expression evaluates to.
-                let result_value = LLVMBuildAlloca(
-                    *self.builder,
-                    self.lower_type(&common_fields.r#type),
-                    string_to_c_string("if_result_temp".to_owned()).as_ptr(),
-                );
-
-                let condition = self.lower_expression(&condition);
-                let then_bb = LLVMCreateBasicBlockInContext(
-                    *self.context,
-                    string_to_c_string("then_block".to_owned()).as_ptr(),
-                );
-                let else_bb = LLVMCreateBasicBlockInContext(
-                    *self.context,
-                    string_to_c_string("else_block".to_owned()).as_ptr(),
-                );
-                let merge_bb = LLVMCreateBasicBlockInContext(
-                    *self.context,
-                    string_to_c_string("merge_block".to_owned()).as_ptr(),
-                );
-                LLVMBuildCondBr(*self.builder, condition, then_bb, else_bb);
-
-                LLVMAppendExistingBasicBlock(function, then_bb);
-                LLVMPositionBuilderAtEnd(*self.builder, then_bb);
-                self.visit(&Node::Block(then_block.clone()));
-                LLVMBuildStore(
-                    *self.builder,
-                    // TODO(derekxu16): This is unsafe.
-                    self.lower_expression(then_block.final_expression.as_ref().unwrap()),
-                    result_value,
-                );
-                LLVMBuildBr(*self.builder, merge_bb);
-
-                LLVMAppendExistingBasicBlock(function, else_bb);
-                LLVMPositionBuilderAtEnd(*self.builder, else_bb);
-                self.visit(&Node::Block(else_block.clone()));
-                LLVMBuildStore(
-                    *self.builder,
-                    // TODO(derekxu16): This is unsafe.
-                    self.lower_expression(else_block.final_expression.as_ref().unwrap()),
-                    result_value,
-                );
-                LLVMBuildBr(*self.builder, merge_bb);
-
-                LLVMAppendExistingBasicBlock(function, merge_bb);
-                LLVMPositionBuilderAtEnd(*self.builder, merge_bb);
-
-                LLVMBuildLoad(
-                    *self.builder,
-                    result_value,
-                    string_to_c_string("load_temp".to_owned()).as_ptr(),
-                )
-            },
-        }
+        unimplemented!()
     }
 
     pub fn lower_expression(
@@ -380,6 +387,7 @@ impl<'a> Builder<'a> {
             Expression::IfExpression(e) => self.lower_if_expression(e),
             Expression::PrefixExpression(e) => self.lower_prefix_expression(e),
             Expression::BinaryExpression(e) => self.lower_binary_expression(e),
+            Expression::FieldAccess(a) => self.lower_field_access(a),
         }
     }
 }

@@ -79,6 +79,20 @@ impl PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for TypeCh
         )
     }
 
+    fn process_if_expression(
+        &mut self,
+        condition: &Expression<TypedNodeCommonFields>,
+        then_block: &Rc<Block<TypedNodeCommonFields>>,
+        else_block: &Rc<Block<TypedNodeCommonFields>>,
+    ) -> IfExpression<TypedNodeCommonFields> {
+        IfExpression::<TypedNodeCommonFields>::new(
+            Type::TypeLiteral(TypeLiteral::I32Type),
+            condition.clone(),
+            then_block.clone(),
+            else_block.clone(),
+        )
+    }
+
     fn process_prefix_expression(
         &mut self,
         operator: &PrefixOperator,
@@ -119,19 +133,12 @@ impl PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for TypeCh
         )
     }
 
-    fn process_if_expression(
+    fn process_field_access(
         &mut self,
-        condition: &Expression<TypedNodeCommonFields>,
-        then_block: &Rc<Block<TypedNodeCommonFields>>,
-        else_block: &Rc<Block<TypedNodeCommonFields>>,
-    ) -> IfExpression<TypedNodeCommonFields> {
-        // if then_block.c
-        IfExpression::<TypedNodeCommonFields>::new(
-            Type::TypeLiteral(TypeLiteral::I32Type),
-            condition.clone(),
-            then_block.clone(),
-            else_block.clone(),
-        )
+        _target: &Expression<TypedNodeCommonFields>,
+        _field_name: &String,
+    ) -> FieldAccess<TypedNodeCommonFields> {
+        unimplemented!()
     }
 
     fn process_variable_declarator(

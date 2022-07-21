@@ -1,6 +1,7 @@
 mod binary_expression;
 mod boolean_literal;
 mod expression;
+mod field_access;
 mod function_call;
 mod if_expression;
 mod integer_literal;
@@ -12,6 +13,7 @@ mod variable_reference;
 pub use binary_expression::*;
 pub use boolean_literal::*;
 pub use expression::*;
+pub use field_access::*;
 pub use function_call::*;
 pub use if_expression::*;
 pub use integer_literal::*;

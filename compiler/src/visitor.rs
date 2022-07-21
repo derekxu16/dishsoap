@@ -45,6 +45,12 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
         right: &Expression<ReturnTypeCommonFields>,
     ) -> BinaryExpression<ReturnTypeCommonFields>;
 
+    fn process_field_access(
+        &mut self,
+        target: &Expression<ReturnTypeCommonFields>,
+        field_name: &String,
+    ) -> FieldAccess<ReturnTypeCommonFields>;
+
     fn process_expression(
         &mut self,
         expression: &Expression<InputTypeCommonFields>,
@@ -82,7 +88,7 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
                 let processed_arguments = c
                     .arguments
                     .iter()
-                    .map(|a| match self.visit(&Node::Expression(a.clone())) {
+                    .map(|a| match self.visit(&Node::Expression(a.deref().clone())) {
                         Node::Expression(e) => e,
                         _ => unreachable!(),
                     })
@@ -137,6 +143,9 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
                     &e.operator,
                     &Rc::new(processed_right),
                 )))
+            }
+            Expression::FieldAccess(_a) => {
+                unimplemented!()
             }
         }
     }
@@ -420,38 +429,41 @@ pub trait PreOrderVisitor<InputTypeCommonFields: Clone> {
         *PreOrderVisitorResponse::new(false)
     }
 
+    fn process_field_access(&mut self, _field_access: &FieldAccess<InputTypeCommonFields>) -> () {}
+
     fn process_expression(&mut self, expression: &Expression<InputTypeCommonFields>) -> () {
         match expression {
             Expression::UnitLiteral(_) => (),
-            Expression::BooleanLiteral(b) => self.process_boolean_literal(&b),
-            Expression::IntegerLiteral(i) => self.process_integer_literal(&i),
-            Expression::RecordLiteral(r) => self.process_record_literal(&r),
-            Expression::VariableReference(r) => self.process_variable_reference(&r),
+            Expression::BooleanLiteral(b) => self.process_boolean_literal(&**b),
+            Expression::IntegerLiteral(i) => self.process_integer_literal(&**i),
+            Expression::RecordLiteral(r) => self.process_record_literal(&**r),
+            Expression::VariableReference(r) => self.process_variable_reference(&**r),
             Expression::FunctionCall(c) => {
-                if !self.process_function_call(&c).should_stop_traversing {
+                if !self.process_function_call(&**c).should_stop_traversing {
                     c.arguments
                         .iter()
                         .for_each(|a| self.visit(&Node::Expression(a.deref().clone())));
                 }
             }
             Expression::IfExpression(e) => {
-                if !self.process_if_expression(&e).should_stop_traversing {
+                if !self.process_if_expression(&**e).should_stop_traversing {
                     self.visit(&Node::Expression(e.condition.clone()));
                     self.visit(&Node::Block(e.then_block.clone()));
                     self.visit(&Node::Block(e.else_block.clone()));
                 }
             }
             Expression::PrefixExpression(e) => {
-                if !self.process_prefix_expression(&e).should_stop_traversing {
+                if !self.process_prefix_expression(&**e).should_stop_traversing {
                     self.visit(&Node::Expression(e.operand.clone()));
                 }
             }
             Expression::BinaryExpression(e) => {
-                if !self.process_binary_expression(&e).should_stop_traversing {
+                if !self.process_binary_expression(&**e).should_stop_traversing {
                     self.visit(&Node::Expression(e.left.clone()));
                     self.visit(&Node::Expression(e.right.clone()));
                 }
             }
+            Expression::FieldAccess(a) => self.process_field_access(&**a),
         };
     }
 
@@ -515,7 +527,7 @@ pub trait PreOrderVisitor<InputTypeCommonFields: Clone> {
                 }
             },
             Statement::ReturnStatement(s) => {
-                if !self.process_return_statement(&s).should_stop_traversing {
+                if !self.process_return_statement(&**s).should_stop_traversing {
                     self.visit(&Node::Expression(s.expression.clone()));
                 }
             }
@@ -536,21 +548,21 @@ pub trait PreOrderVisitor<InputTypeCommonFields: Clone> {
             Node::Identifier(_) => unreachable!(),
             Node::Type(_) => unreachable!(),
             Node::Expression(e) => {
-                self.process_expression(&e);
+                self.process_expression(e);
             }
             Node::VariableDeclarator(d) => {
-                self.process_variable_declarator(&d);
+                self.process_variable_declarator(&**d);
             }
             Node::Parameter(p) => {
-                if !self.process_parameter(&p).should_stop_traversing {
+                if !self.process_parameter(&**p).should_stop_traversing {
                     self.visit(&Node::VariableDeclarator(p.variable_declarator.clone()));
                 }
             }
             Node::Block(b) => {
-                if !self.process_block(&b).should_stop_traversing {
+                if !self.process_block(&**b).should_stop_traversing {
                     b.statements
                         .iter()
-                        .for_each(|s| self.visit(&Node::Statement(s.clone())));
+                        .for_each(|s| self.visit(&Node::Statement(s.deref().clone())));
                     match &b.final_expression {
                         Some(fe) => self.visit(&Node::Expression(fe.deref().clone())),
                         None => (),
@@ -561,9 +573,11 @@ pub trait PreOrderVisitor<InputTypeCommonFields: Clone> {
                 self.process_statement(s);
             }
             Node::SourceFile(sf) => {
-                if !self.process_source_file(sf).should_stop_traversing {
+                if !self.process_source_file(&**sf).should_stop_traversing {
                     sf.declarations.iter().for_each(|d| {
-                        self.visit(&Node::Statement(Statement::Declaration((**d).clone())));
+                        self.visit(&Node::Statement(Statement::Declaration(
+                            d.deref().deref().clone(),
+                        )));
                     });
                 }
             }

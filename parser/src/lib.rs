@@ -208,16 +208,17 @@ impl<'ast> Parser<'ast> {
 
     fn parse_infix_operator(&mut self) -> InfixOperator {
         match self.lexer.pop() {
+            Some(Token::DoubleEquals) => InfixOperator::DoubleEquals,
+            Some(Token::LessThan) => InfixOperator::LessThan,
+            Some(Token::LessThanEquals) => InfixOperator::LessThanEquals,
+            Some(Token::GreaterThan) => InfixOperator::GreaterThan,
+            Some(Token::GreaterThanEquals) => InfixOperator::GreaterThanEquals,
             Some(Token::Plus) => InfixOperator::Plus,
             Some(Token::Minus) => InfixOperator::Minus,
             Some(Token::Times) => InfixOperator::Times,
             Some(Token::Divide) => InfixOperator::Divide,
             Some(Token::Percent) => InfixOperator::Modulo,
-            Some(Token::LessThan) => InfixOperator::LessThan,
-            Some(Token::LessThanEquals) => InfixOperator::LessThanEquals,
-            Some(Token::GreaterThan) => InfixOperator::GreaterThan,
-            Some(Token::GreaterThanEquals) => InfixOperator::GreaterThanEquals,
-            Some(Token::DoubleEquals) => InfixOperator::DoubleEquals,
+            Some(Token::Dot) => InfixOperator::Dot,
             _ => panic!("Compilation error: unexpected token"),
         }
     }
@@ -233,6 +234,7 @@ impl<'ast> Parser<'ast> {
             | Some(Token::GreaterThanEquals) => 3,
             Some(Token::Plus) | Some(Token::Minus) => 4,
             Some(Token::Times) | Some(Token::Divide) | Some(Token::Percent) => 5,
+            Some(Token::Dot) => 6,
             _ => 0,
         }
     }
@@ -294,13 +296,21 @@ impl<'ast> Parser<'ast> {
 
             let infix_operator = self.parse_infix_operator();
 
-            left = Some(Expression::BinaryExpression(Rc::new(BinaryExpression::<
-                UntypedNodeCommonFields,
-            >::new(
-                left.unwrap(),
-                infix_operator,
-                self.parse_expression(next_precedence).unwrap(),
-            ))));
+            left = match infix_operator {
+                InfixOperator::Dot => Some(Expression::FieldAccess(Rc::new(FieldAccess::<
+                    UntypedNodeCommonFields,
+                >::new(
+                    left.unwrap(),
+                    self.parse_identifier().name,
+                )))),
+                _ => Some(Expression::BinaryExpression(Rc::new(BinaryExpression::<
+                    UntypedNodeCommonFields,
+                >::new(
+                    left.unwrap(),
+                    infix_operator,
+                    self.parse_expression(next_precedence).unwrap(),
+                )))),
+            }
         }
         left
     }
