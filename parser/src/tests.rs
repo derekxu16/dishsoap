@@ -217,6 +217,71 @@ mod tests {
     }
 
     #[test]
+    fn record_initializations_and_field_accesses() {
+        let sf_node = parse(test_inputs::RECORD_INITIALIZATION_AND_FIELD_ACCESS);
+        assert_eq!(
+            sf_node,
+            define_test_body(Rc::new(Block::new_with_final_expression(
+                vec![Statement::Declaration(Declaration::VariableDeclaration(
+                    Rc::new(VariableDeclaration::<UntypedNodeCommonFields>::new(
+                        Rc::new(VariableDeclarator::<UntypedNodeCommonFields>::new(
+                            Identifier::new("x".to_owned()),
+                            Type::RecordType(Rc::new(RecordType::new(HashMap::from([
+                                ("a".to_string(), Type::TypeLiteral(TypeLiteral::BoolType)),
+                                (
+                                    "b".to_string(),
+                                    Type::RecordType(Rc::new(RecordType::new(HashMap::from([(
+                                        "c".to_string(),
+                                        Type::TypeLiteral(TypeLiteral::I32Type)
+                                    )]))))
+                                )
+                            ]))))
+                        )),
+                        Expression::RecordLiteral(Rc::new(
+                            RecordLiteral::<UntypedNodeCommonFields>::new(HashMap::from([
+                                (
+                                    "a".to_string(),
+                                    Expression::BooleanLiteral(Rc::new(BooleanLiteral::<
+                                        UntypedNodeCommonFields,
+                                    >::new(
+                                        true
+                                    )))
+                                ),
+                                (
+                                    "b".to_string(),
+                                    Expression::RecordLiteral(Rc::new(RecordLiteral::<
+                                        UntypedNodeCommonFields,
+                                    >::new(
+                                        HashMap::from([(
+                                            "c".to_string(),
+                                            Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
+                                                UntypedNodeCommonFields,
+                                            >::new(
+                                                123
+                                            )))
+                                        )])
+                                    )))
+                                )
+                            ]))
+                        ))
+                    ))
+                ))],
+                Expression::FieldAccess(Rc::new(FieldAccess::<UntypedNodeCommonFields>::new(
+                    Expression::FieldAccess(Rc::new(FieldAccess::<UntypedNodeCommonFields>::new(
+                        Expression::VariableReference(Rc::new(VariableReference::<
+                            UntypedNodeCommonFields,
+                        >::new(
+                            Identifier::new("x".to_owned())
+                        ))),
+                        "b".to_string()
+                    ))),
+                    "c".to_string()
+                )))
+            )))
+        )
+    }
+
+    #[test]
     fn variable_initializations_and_references() {
         let sf_node = parse(test_inputs::VARIABLE_INITIALIZATION_AND_REFERENCE_INT);
         assert_eq!(
@@ -257,50 +322,6 @@ mod tests {
                 ))
             )))
         );
-    }
-
-    #[test]
-    fn variable_initialization_record_type() {
-        let sf_node = parse(test_inputs::VARIABLE_INITIALIZATION_RECORD_TYPE);
-        assert_eq!(
-            sf_node,
-            define_test_body(Rc::new(Block::new_with_final_expression(
-                vec![Statement::Declaration(Declaration::VariableDeclaration(
-                    Rc::new(VariableDeclaration::<UntypedNodeCommonFields>::new(
-                        Rc::new(VariableDeclarator::<UntypedNodeCommonFields>::new(
-                            Identifier::new("x".to_owned()),
-                            Type::RecordType(Rc::new(RecordType::new(HashMap::from([
-                                ("a".to_string(), Type::TypeLiteral(TypeLiteral::I32Type)),
-                                ("b".to_string(), Type::TypeLiteral(TypeLiteral::BoolType))
-                            ]))))
-                        )),
-                        Expression::RecordLiteral(Rc::new(
-                            RecordLiteral::<UntypedNodeCommonFields>::new(HashMap::from([
-                                (
-                                    "a".to_string(),
-                                    Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
-                                        UntypedNodeCommonFields,
-                                    >::new(
-                                        11
-                                    )))
-                                ),
-                                (
-                                    "b".to_string(),
-                                    Expression::BooleanLiteral(Rc::new(BooleanLiteral::<
-                                        UntypedNodeCommonFields,
-                                    >::new(
-                                        true
-                                    )))
-                                )
-                            ]))
-                        ))
-                    ))
-                ))],
-                Expression::IntegerLiteral(Rc::new(
-                    IntegerLiteral::<UntypedNodeCommonFields>::new(0)
-                ))
-            )))
-        )
     }
 
     #[test]

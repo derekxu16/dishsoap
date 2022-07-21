@@ -51,18 +51,18 @@ func test() -> P_i32 {
 }
 ";
 
+pub const RECORD_INITIALIZATION_AND_FIELD_ACCESS: &str = "
+func test() -> P_i32 {
+    let x: {a: P_bool, b: {c: P_i32}} = {a: true, b: {c: 123}};
+    x.b.c
+}
+";
+
 pub const VARIABLE_INITIALIZATION_AND_REFERENCE_INT: &str = "
 func test() -> P_i32 {
     let a: P_i32 = 10;
     let b: P_i32 = a;
     b
-}
-";
-
-pub const VARIABLE_INITIALIZATION_RECORD_TYPE: &str = "
-func test() -> P_i32 {
-    let x: {a: P_i32, b: P_bool} = {a: 11, b: true};
-    0
 }
 ";
 

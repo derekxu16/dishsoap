@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
 use crate::{
-    BinaryExpression, BooleanLiteral, FunctionCall, IfExpression, IntegerLiteral, PrefixExpression,
-    RecordLiteral, Type, TypedNodeCommonFields, UnitLiteral, VariableReference,
+    BinaryExpression, BooleanLiteral, FieldAccess, FunctionCall, IfExpression, IntegerLiteral,
+    PrefixExpression, RecordLiteral, Type, TypedNodeCommonFields, UnitLiteral, VariableReference,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -16,6 +16,7 @@ pub enum Expression<CommonFields: Clone> {
     IfExpression(Rc<IfExpression<CommonFields>>),
     PrefixExpression(Rc<PrefixExpression<CommonFields>>),
     BinaryExpression(Rc<BinaryExpression<CommonFields>>),
+    FieldAccess(Rc<FieldAccess<CommonFields>>),
 }
 
 impl Expression<TypedNodeCommonFields> {
@@ -30,6 +31,7 @@ impl Expression<TypedNodeCommonFields> {
             Expression::IfExpression(e) => &e.common_fields.r#type,
             Expression::PrefixExpression(e) => &e.common_fields.r#type,
             Expression::BinaryExpression(e) => &e.common_fields.r#type,
+            Expression::FieldAccess(e) => &e.common_fields.r#type,
         }
     }
 }

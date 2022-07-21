@@ -6,17 +6,18 @@ pub enum PrefixOperator {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum InfixOperator {
-    Plus,
-    Minus,
-    Times,
-    Divide,
-    Modulo,
-    BitShiftLeft,
-    BitShiftRight,
+    Equals,
     DoubleEquals,
     LessThan,
     LessThanEquals,
     GreaterThan,
     GreaterThanEquals,
-    Equals,
+    BitShiftLeft,
+    BitShiftRight,
+    Plus,
+    Minus,
+    Times,
+    Divide,
+    Modulo,
+    Dot,
 }

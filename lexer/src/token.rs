@@ -12,7 +12,7 @@ pub enum Token {
     Comma,
 
     #[token(".")]
-    Accessor,
+    Dot,
 
     #[token("(")]
     ParenOpen,

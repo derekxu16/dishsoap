@@ -4,7 +4,6 @@ use crate::visitor::PostOrderVisitor;
 use dishsoap_parser::ast::*;
 use dishsoap_parser::test_inputs;
 use dishsoap_parser::Parser;
-use std::collections::HashMap;
 use std::rc::Rc;
 
 mod tests {
@@ -295,56 +294,6 @@ mod tests {
                 ))
             )))
         );
-    }
-
-    #[test]
-    fn variable_initialization_record_type() {
-        let sf_node = parse_and_check(test_inputs::VARIABLE_INITIALIZATION_RECORD_TYPE);
-        let record_type = Type::RecordType(Rc::new(RecordType::new(HashMap::from([
-            ("a".to_string(), Type::TypeLiteral(TypeLiteral::I32Type)),
-            ("b".to_string(), Type::TypeLiteral(TypeLiteral::BoolType)),
-        ]))));
-        assert_eq!(
-            sf_node,
-            define_test_body(Rc::new(Block::new_with_final_expression(
-                vec![Statement::Declaration(Declaration::VariableDeclaration(
-                    Rc::new(VariableDeclaration::<TypedNodeCommonFields>::new(
-                        record_type.clone(),
-                        Rc::new(VariableDeclarator::<TypedNodeCommonFields>::new(
-                            record_type.clone(),
-                            Identifier::new("x".to_owned()),
-                            record_type.clone()
-                        )),
-                        Expression::RecordLiteral(Rc::new(
-                            RecordLiteral::<TypedNodeCommonFields>::new(
-                                record_type.clone(),
-                                HashMap::from([
-                                    (
-                                        "a".to_string(),
-                                        Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
-                                            TypedNodeCommonFields,
-                                        >::new(
-                                            11
-                                        )))
-                                    ),
-                                    (
-                                        "b".to_string(),
-                                        Expression::BooleanLiteral(Rc::new(BooleanLiteral::<
-                                            TypedNodeCommonFields,
-                                        >::new(
-                                            true
-                                        )))
-                                    )
-                                ])
-                            )
-                        ))
-                    ))
-                ))],
-                Expression::IntegerLiteral(Rc::new(IntegerLiteral::<TypedNodeCommonFields>::new(
-                    0
-                )))
-            )))
-        )
     }
 
     #[test]
