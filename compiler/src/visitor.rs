@@ -144,8 +144,15 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
                     &Rc::new(processed_right),
                 )))
             }
-            Expression::FieldAccess(_a) => {
-                unimplemented!()
+            Expression::FieldAccess(a) => {
+                let processed_target = match self.visit(&Node::Expression(a.target.clone())) {
+                    Node::Expression(e) => e,
+                    _ => unreachable!(),
+                };
+
+                Expression::FieldAccess(Rc::new(
+                    self.process_field_access(&processed_target, &a.field_name),
+                ))
             }
         }
     }

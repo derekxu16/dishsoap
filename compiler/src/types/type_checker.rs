@@ -135,10 +135,23 @@ impl PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for TypeCh
 
     fn process_field_access(
         &mut self,
-        _target: &Expression<TypedNodeCommonFields>,
-        _field_name: &String,
+        target: &Expression<TypedNodeCommonFields>,
+        field_name: &String,
     ) -> FieldAccess<TypedNodeCommonFields> {
-        unimplemented!()
+        let target_type = match target.get_type() {
+            Type::RecordType(t) => &**t,
+            _ => unreachable!(),
+        };
+        let field_type = match target_type.fields.get(field_name) {
+            Some(t) => t,
+            None => panic!("Compilation error"),
+        };
+
+        FieldAccess::<TypedNodeCommonFields>::new(
+            field_type.clone(),
+            target.clone(),
+            field_name.clone(),
+        )
     }
 
     fn process_variable_declarator(
