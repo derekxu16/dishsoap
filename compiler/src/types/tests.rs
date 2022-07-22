@@ -4,6 +4,7 @@ use crate::visitor::PostOrderVisitor;
 use dishsoap_parser::ast::*;
 use dishsoap_parser::test_inputs;
 use dishsoap_parser::Parser;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 mod tests {
@@ -245,6 +246,81 @@ mod tests {
                 ),)),
             ])))
         );
+    }
+
+    #[test]
+    fn record_initializations_and_field_accesses() {
+        let sf_node = parse_and_check(test_inputs::RECORD_INITIALIZATION_AND_FIELD_ACCESS);
+
+        let b_type = Type::RecordType(Rc::new(RecordType::new(HashMap::from([(
+            "c".to_string(),
+            Type::TypeLiteral(TypeLiteral::I32Type),
+        )]))));
+        let x_type = Type::RecordType(Rc::new(RecordType::new(HashMap::from([
+            ("a".to_string(), Type::TypeLiteral(TypeLiteral::BoolType)),
+            ("b".to_string(), b_type.clone()),
+        ]))));
+
+        assert_eq!(
+            sf_node,
+            define_test_body(Rc::new(Block::new_with_final_expression(
+                vec![Statement::Declaration(Declaration::VariableDeclaration(
+                    Rc::new(VariableDeclaration::<TypedNodeCommonFields>::new(
+                        x_type.clone(),
+                        Rc::new(VariableDeclarator::<TypedNodeCommonFields>::new(
+                            x_type.clone(),
+                            Identifier::new("x".to_owned()),
+                            x_type.clone()
+                        )),
+                        Expression::RecordLiteral(Rc::new(
+                            RecordLiteral::<TypedNodeCommonFields>::new(
+                                x_type.clone(),
+                                HashMap::from([
+                                    (
+                                        "a".to_string(),
+                                        Expression::BooleanLiteral(Rc::new(BooleanLiteral::<
+                                            TypedNodeCommonFields,
+                                        >::new(
+                                            true
+                                        )))
+                                    ),
+                                    (
+                                        "b".to_string(),
+                                        Expression::RecordLiteral(Rc::new(RecordLiteral::<
+                                            TypedNodeCommonFields,
+                                        >::new(
+                                            b_type.clone(),
+                                            HashMap::from([(
+                                                "c".to_string(),
+                                                Expression::IntegerLiteral(Rc::new(
+                                                    IntegerLiteral::<TypedNodeCommonFields>::new(
+                                                        123
+                                                    )
+                                                ))
+                                            )])
+                                        )))
+                                    )
+                                ])
+                            )
+                        ))
+                    ))
+                ))],
+                Expression::FieldAccess(Rc::new(FieldAccess::<TypedNodeCommonFields>::new(
+                    Type::TypeLiteral(TypeLiteral::I32Type),
+                    Expression::FieldAccess(Rc::new(FieldAccess::<TypedNodeCommonFields>::new(
+                        b_type.clone(),
+                        Expression::VariableReference(Rc::new(VariableReference::<
+                            TypedNodeCommonFields,
+                        >::new(
+                            x_type.clone(),
+                            Identifier::new("x".to_owned())
+                        ))),
+                        "b".to_string()
+                    ))),
+                    "c".to_string()
+                )))
+            )))
+        )
     }
 
     #[test]
