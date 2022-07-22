@@ -43,15 +43,6 @@ impl<'ast> Parser<'ast> {
         }
     }
 
-    fn parse_type_literal(&mut self) -> TypeLiteral {
-        match self.lexer.pop() {
-            Some(Token::UnitPrimitiveKeyword) => TypeLiteral::UnitType,
-            Some(Token::BoolPrimitiveKeyword) => TypeLiteral::BoolType,
-            Some(Token::I32PrimitiveKeyword) => TypeLiteral::I32Type,
-            _ => panic!("Compilation error"),
-        }
-    }
-
     fn parse_record_type(&mut self) -> RecordType {
         let mut fields = HashMap::new();
 
@@ -86,7 +77,12 @@ impl<'ast> Parser<'ast> {
         match self.lexer.peek() {
             Some(Token::UnitPrimitiveKeyword)
             | Some(Token::BoolPrimitiveKeyword)
-            | Some(Token::I32PrimitiveKeyword) => Type::TypeLiteral(self.parse_type_literal()),
+            | Some(Token::I32PrimitiveKeyword) => match self.lexer.pop() {
+                Some(Token::UnitPrimitiveKeyword) => Type::UnitType,
+                Some(Token::BoolPrimitiveKeyword) => Type::BoolType,
+                Some(Token::I32PrimitiveKeyword) => Type::I32Type,
+                _ => panic!("Compilation error"),
+            },
             Some(Token::BraceOpen) => Type::RecordType(Rc::new(self.parse_record_type())),
             Some(Token::ParenOpen) => todo!("Support function type annotations"),
             _ => panic!("Compilation error"),

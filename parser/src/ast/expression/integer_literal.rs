@@ -1,4 +1,4 @@
-use crate::{Type, TypeLiteral, TypedNodeCommonFields, UntypedNodeCommonFields};
+use crate::{Type, TypedNodeCommonFields, UntypedNodeCommonFields};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IntegerLiteral<CommonFields> {
@@ -18,7 +18,7 @@ impl IntegerLiteral<UntypedNodeCommonFields> {
 impl IntegerLiteral<TypedNodeCommonFields> {
     pub fn new(value: i32) -> Self {
         IntegerLiteral::<TypedNodeCommonFields> {
-            common_fields: TypedNodeCommonFields::new(Type::TypeLiteral(TypeLiteral::I32Type)),
+            common_fields: TypedNodeCommonFields::new(Type::I32Type),
             value,
         }
     }

@@ -1,4 +1,4 @@
-use crate::{Type, TypeLiteral, TypedNodeCommonFields, UntypedNodeCommonFields};
+use crate::{Type, TypedNodeCommonFields, UntypedNodeCommonFields};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UnitLiteral<CommonFields> {
@@ -16,7 +16,7 @@ impl UnitLiteral<UntypedNodeCommonFields> {
 impl UnitLiteral<TypedNodeCommonFields> {
     pub fn new() -> Self {
         UnitLiteral::<TypedNodeCommonFields> {
-            common_fields: TypedNodeCommonFields::new(Type::TypeLiteral(TypeLiteral::UnitType)),
+            common_fields: TypedNodeCommonFields::new(Type::UnitType),
         }
     }
 }

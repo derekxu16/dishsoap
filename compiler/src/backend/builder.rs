@@ -89,16 +89,6 @@ impl<'a> Builder<'a> {
         }
     }
 
-    pub fn lower_type_literal(&mut self, r#type: &TypeLiteral) -> LLVMTypeRef {
-        unsafe {
-            match r#type {
-                TypeLiteral::UnitType => LLVMVoidType(),
-                TypeLiteral::BoolType => LLVMInt1Type(),
-                TypeLiteral::I32Type => LLVMInt32Type(),
-            }
-        }
-    }
-
     pub fn lower_record_type(&mut self, r#type: &RecordType) -> LLVMTypeRef {
         let element_count = r#type.fields.keys().len();
         let sorted_keys = r#type.fields.keys().sorted().collect::<Vec<&String>>();
@@ -125,7 +115,9 @@ impl<'a> Builder<'a> {
 
     pub fn lower_type(&mut self, r#type: &Type) -> LLVMTypeRef {
         match r#type {
-            Type::TypeLiteral(t) => self.lower_type_literal(t),
+            Type::UnitType => unsafe { LLVMVoidType() },
+            Type::BoolType => unsafe { LLVMInt1Type() },
+            Type::I32Type => unsafe { LLVMInt32Type() },
             Type::RecordType(t) => self.lower_record_type(&**t),
             Type::FunctionType(t) => self.lower_function_type(&**t),
         }

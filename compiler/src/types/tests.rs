@@ -14,9 +14,9 @@ mod tests {
         Node::SourceFile(Rc::new(SourceFile::new(vec![Rc::new(
             Declaration::FunctionDeclaration(Rc::new(
                 FunctionDeclaration::<TypedNodeCommonFields>::new(
-                    Type::TypeLiteral(TypeLiteral::UnitType),
+                    Type::UnitType,
                     Identifier::new("test".to_owned()),
-                    Type::TypeLiteral(TypeLiteral::I32Type),
+                    Type::I32Type,
                     vec![],
                     body,
                 ),
@@ -42,16 +42,16 @@ mod tests {
                 Declaration::FunctionDeclaration(Rc::new(FunctionDeclaration::<
                     TypedNodeCommonFields,
                 >::new(
-                    Type::TypeLiteral(TypeLiteral::UnitType),
+                    Type::UnitType,
                     Identifier::new("test".to_owned()),
-                    Type::TypeLiteral(TypeLiteral::BoolType),
+                    Type::BoolType,
                     vec![],
                     Rc::new(Block::new_with_final_expression(
                         vec![],
                         Expression::PrefixExpression(Rc::new(PrefixExpression::<
                             TypedNodeCommonFields,
                         >::new(
-                            Type::TypeLiteral(TypeLiteral::BoolType),
+                            Type::BoolType,
                             PrefixOperator::Bang,
                             Expression::BooleanLiteral(Rc::new(BooleanLiteral::<
                                 TypedNodeCommonFields,
@@ -74,7 +74,7 @@ mod tests {
                 vec![],
                 Expression::PrefixExpression(Rc::new(
                     PrefixExpression::<TypedNodeCommonFields>::new(
-                        Type::TypeLiteral(TypeLiteral::I32Type),
+                        Type::I32Type,
                         PrefixOperator::Minus,
                         Expression::IntegerLiteral(Rc::new(
                             IntegerLiteral::<TypedNodeCommonFields>::new(4)
@@ -94,7 +94,7 @@ mod tests {
                 vec![],
                 Expression::BinaryExpression(Rc::new(
                     BinaryExpression::<TypedNodeCommonFields>::new(
-                        Type::TypeLiteral(TypeLiteral::I32Type),
+                        Type::I32Type,
                         Expression::IntegerLiteral(Rc::new(
                             IntegerLiteral::<TypedNodeCommonFields>::new(2)
                         )),
@@ -102,7 +102,7 @@ mod tests {
                         Expression::BinaryExpression(Rc::new(BinaryExpression::<
                             TypedNodeCommonFields,
                         >::new(
-                            Type::TypeLiteral(TypeLiteral::I32Type),
+                            Type::I32Type,
                             Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
                                 TypedNodeCommonFields,
                             >::new(
@@ -129,10 +129,10 @@ mod tests {
             define_test_body(Rc::new(Block::new_with_final_expression(
                 vec![],
                 Expression::IfExpression(Rc::new(IfExpression::<TypedNodeCommonFields>::new(
-                    Type::TypeLiteral(TypeLiteral::I32Type),
+                    Type::I32Type,
                     Expression::BinaryExpression(Rc::new(
                         BinaryExpression::<TypedNodeCommonFields>::new(
-                            Type::TypeLiteral(TypeLiteral::I32Type),
+                            Type::I32Type,
                             Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
                                 TypedNodeCommonFields,
                             >::new(
@@ -171,24 +171,24 @@ mod tests {
             Node::SourceFile(Rc::new(SourceFile::new(vec![
                 Rc::new(Declaration::FunctionDeclaration(Rc::new(
                     FunctionDeclaration::<TypedNodeCommonFields>::new(
-                        Type::TypeLiteral(TypeLiteral::UnitType),
+                        Type::UnitType,
                         Identifier::new("add".to_owned()),
-                        Type::TypeLiteral(TypeLiteral::I32Type),
+                        Type::I32Type,
                         vec![
                             Rc::new(Parameter::<TypedNodeCommonFields>::new(
-                                Type::TypeLiteral(TypeLiteral::I32Type),
+                                Type::I32Type,
                                 Rc::new(VariableDeclarator::<TypedNodeCommonFields>::new(
-                                    Type::TypeLiteral(TypeLiteral::I32Type),
+                                    Type::I32Type,
                                     Identifier::new("a".to_owned()),
-                                    Type::TypeLiteral(TypeLiteral::I32Type),
+                                    Type::I32Type,
                                 ))
                             )),
                             Rc::new(Parameter::<TypedNodeCommonFields>::new(
-                                Type::TypeLiteral(TypeLiteral::I32Type),
+                                Type::I32Type,
                                 Rc::new(VariableDeclarator::<TypedNodeCommonFields>::new(
-                                    Type::TypeLiteral(TypeLiteral::I32Type),
+                                    Type::I32Type,
                                     Identifier::new("b".to_owned()),
-                                    Type::TypeLiteral(TypeLiteral::I32Type),
+                                    Type::I32Type,
                                 ))
                             ))
                         ],
@@ -197,18 +197,18 @@ mod tests {
                             Expression::BinaryExpression(Rc::new(BinaryExpression::<
                                 TypedNodeCommonFields,
                             >::new(
-                                Type::TypeLiteral(TypeLiteral::I32Type),
+                                Type::I32Type,
                                 Expression::VariableReference(Rc::new(VariableReference::<
                                     TypedNodeCommonFields,
                                 >::new(
-                                    Type::TypeLiteral(TypeLiteral::I32Type),
+                                    Type::I32Type,
                                     Identifier::new("a".to_owned())
                                 ))),
                                 InfixOperator::Plus,
                                 Expression::VariableReference(Rc::new(VariableReference::<
                                     TypedNodeCommonFields,
                                 >::new(
-                                    Type::TypeLiteral(TypeLiteral::I32Type),
+                                    Type::I32Type,
                                     Identifier::new("b".to_owned())
                                 ))),
                             )))
@@ -217,15 +217,15 @@ mod tests {
                 ))),
                 Rc::new(Declaration::FunctionDeclaration(Rc::new(
                     FunctionDeclaration::<TypedNodeCommonFields>::new(
-                        Type::TypeLiteral(TypeLiteral::UnitType),
+                        Type::UnitType,
                         Identifier::new("test".to_owned(),),
-                        Type::TypeLiteral(TypeLiteral::I32Type),
+                        Type::I32Type,
                         vec![],
                         Rc::new(Block::new_with_final_expression(
                             vec![],
                             Expression::FunctionCall(Rc::new(
                                 FunctionCall::<TypedNodeCommonFields>::new(
-                                    Type::TypeLiteral(TypeLiteral::I32Type),
+                                    Type::I32Type,
                                     Identifier::new("add".to_owned()),
                                     vec![
                                         Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
@@ -254,10 +254,10 @@ mod tests {
 
         let b_type = Type::RecordType(Rc::new(RecordType::new(HashMap::from([(
             "c".to_string(),
-            Type::TypeLiteral(TypeLiteral::I32Type),
+            Type::I32Type,
         )]))));
         let x_type = Type::RecordType(Rc::new(RecordType::new(HashMap::from([
-            ("a".to_string(), Type::TypeLiteral(TypeLiteral::BoolType)),
+            ("a".to_string(), Type::BoolType),
             ("b".to_string(), b_type.clone()),
         ]))));
 
@@ -306,7 +306,7 @@ mod tests {
                     ))
                 ))],
                 Expression::FieldAccess(Rc::new(FieldAccess::<TypedNodeCommonFields>::new(
-                    Type::TypeLiteral(TypeLiteral::I32Type),
+                    Type::I32Type,
                     Expression::FieldAccess(Rc::new(FieldAccess::<TypedNodeCommonFields>::new(
                         b_type.clone(),
                         Expression::VariableReference(Rc::new(VariableReference::<
@@ -332,11 +332,11 @@ mod tests {
                 vec![
                     Statement::Declaration(Declaration::VariableDeclaration(Rc::new(
                         VariableDeclaration::<TypedNodeCommonFields>::new(
-                            Type::TypeLiteral(TypeLiteral::I32Type),
+                            Type::I32Type,
                             Rc::new(VariableDeclarator::<TypedNodeCommonFields>::new(
-                                Type::TypeLiteral(TypeLiteral::I32Type),
+                                Type::I32Type,
                                 Identifier::new("a".to_owned()),
-                                Type::TypeLiteral(TypeLiteral::I32Type)
+                                Type::I32Type
                             )),
                             Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
                                 TypedNodeCommonFields,
@@ -347,16 +347,16 @@ mod tests {
                     ))),
                     Statement::Declaration(Declaration::VariableDeclaration(Rc::new(
                         VariableDeclaration::<TypedNodeCommonFields>::new(
-                            Type::TypeLiteral(TypeLiteral::I32Type),
+                            Type::I32Type,
                             Rc::new(VariableDeclarator::<TypedNodeCommonFields>::new(
-                                Type::TypeLiteral(TypeLiteral::I32Type),
+                                Type::I32Type,
                                 Identifier::new("b".to_owned()),
-                                Type::TypeLiteral(TypeLiteral::I32Type)
+                                Type::I32Type
                             )),
                             Expression::VariableReference(Rc::new(VariableReference::<
                                 TypedNodeCommonFields,
                             >::new(
-                                Type::TypeLiteral(TypeLiteral::I32Type),
+                                Type::I32Type,
                                 Identifier::new("a".to_owned())
                             )))
                         )
@@ -364,7 +364,7 @@ mod tests {
                 ],
                 Expression::VariableReference(Rc::new(
                     VariableReference::<TypedNodeCommonFields>::new(
-                        Type::TypeLiteral(TypeLiteral::I32Type),
+                        Type::I32Type,
                         Identifier::new("b".to_owned())
                     )
                 ))
@@ -381,24 +381,24 @@ mod tests {
                 Declaration::FunctionDeclaration(Rc::new(FunctionDeclaration::<
                     TypedNodeCommonFields,
                 >::new(
-                    Type::TypeLiteral(TypeLiteral::UnitType),
+                    Type::UnitType,
                     Identifier::new("add".to_owned()),
-                    Type::TypeLiteral(TypeLiteral::I32Type),
+                    Type::I32Type,
                     vec![
                         Rc::new(Parameter::<TypedNodeCommonFields>::new(
-                            Type::TypeLiteral(TypeLiteral::I32Type),
+                            Type::I32Type,
                             Rc::new(VariableDeclarator::<TypedNodeCommonFields>::new(
-                                Type::TypeLiteral(TypeLiteral::I32Type),
+                                Type::I32Type,
                                 Identifier::new("a".to_owned()),
-                                Type::TypeLiteral(TypeLiteral::I32Type),
+                                Type::I32Type,
                             ))
                         )),
                         Rc::new(Parameter::<TypedNodeCommonFields>::new(
-                            Type::TypeLiteral(TypeLiteral::I32Type),
+                            Type::I32Type,
                             Rc::new(VariableDeclarator::<TypedNodeCommonFields>::new(
-                                Type::TypeLiteral(TypeLiteral::I32Type),
+                                Type::I32Type,
                                 Identifier::new("b".to_owned()),
-                                Type::TypeLiteral(TypeLiteral::I32Type),
+                                Type::I32Type,
                             ))
                         ))
                     ],
@@ -407,18 +407,18 @@ mod tests {
                         Expression::BinaryExpression(Rc::new(BinaryExpression::<
                             TypedNodeCommonFields,
                         >::new(
-                            Type::TypeLiteral(TypeLiteral::I32Type),
+                            Type::I32Type,
                             Expression::VariableReference(Rc::new(VariableReference::<
                                 TypedNodeCommonFields,
                             >::new(
-                                Type::TypeLiteral(TypeLiteral::I32Type),
+                                Type::I32Type,
                                 Identifier::new("a".to_owned())
                             ))),
                             InfixOperator::Plus,
                             Expression::VariableReference(Rc::new(VariableReference::<
                                 TypedNodeCommonFields,
                             >::new(
-                                Type::TypeLiteral(TypeLiteral::I32Type),
+                                Type::I32Type,
                                 Identifier::new("b".to_owned())
                             ))),
                         )))

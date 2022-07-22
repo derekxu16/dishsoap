@@ -8,7 +8,7 @@ mod tests {
             Declaration::FunctionDeclaration(Rc::new(
                 FunctionDeclaration::<UntypedNodeCommonFields>::new(
                     Identifier::new("test".to_owned()),
-                    Type::TypeLiteral(TypeLiteral::I32Type),
+                    Type::I32Type,
                     vec![],
                     body,
                 ),
@@ -32,7 +32,7 @@ mod tests {
                     UntypedNodeCommonFields,
                 >::new(
                     Identifier::new("test".to_owned()),
-                    Type::TypeLiteral(TypeLiteral::BoolType),
+                    Type::BoolType,
                     vec![],
                     Rc::new(Block::new_with_final_expression(
                         vec![],
@@ -150,18 +150,18 @@ mod tests {
                 Rc::new(Declaration::FunctionDeclaration(Rc::new(
                     FunctionDeclaration::<UntypedNodeCommonFields>::new(
                         Identifier::new("add".to_owned()),
-                        Type::TypeLiteral(TypeLiteral::I32Type),
+                        Type::I32Type,
                         vec![
                             Rc::new(Parameter::<UntypedNodeCommonFields>::new(Rc::new(
                                 VariableDeclarator::<UntypedNodeCommonFields>::new(
                                     Identifier::new("a".to_owned()),
-                                    Type::TypeLiteral(TypeLiteral::I32Type),
+                                    Type::I32Type,
                                 )
                             ))),
                             Rc::new(Parameter::<UntypedNodeCommonFields>::new(Rc::new(
                                 VariableDeclarator::<UntypedNodeCommonFields>::new(
                                     Identifier::new("b".to_owned()),
-                                    Type::TypeLiteral(TypeLiteral::I32Type),
+                                    Type::I32Type,
                                 )
                             )))
                         ],
@@ -188,7 +188,7 @@ mod tests {
                 Rc::new(Declaration::FunctionDeclaration(Rc::new(
                     FunctionDeclaration::<UntypedNodeCommonFields>::new(
                         Identifier::new("test".to_owned(),),
-                        Type::TypeLiteral(TypeLiteral::I32Type),
+                        Type::I32Type,
                         vec![],
                         Rc::new(Block::new_with_final_expression(
                             vec![],
@@ -227,12 +227,12 @@ mod tests {
                         Rc::new(VariableDeclarator::<UntypedNodeCommonFields>::new(
                             Identifier::new("x".to_owned()),
                             Type::RecordType(Rc::new(RecordType::new(HashMap::from([
-                                ("a".to_string(), Type::TypeLiteral(TypeLiteral::BoolType)),
+                                ("a".to_string(), Type::BoolType),
                                 (
                                     "b".to_string(),
                                     Type::RecordType(Rc::new(RecordType::new(HashMap::from([(
                                         "c".to_string(),
-                                        Type::TypeLiteral(TypeLiteral::I32Type)
+                                        Type::I32Type
                                     )]))))
                                 )
                             ]))))
@@ -292,7 +292,7 @@ mod tests {
                         VariableDeclaration::<UntypedNodeCommonFields>::new(
                             Rc::new(VariableDeclarator::<UntypedNodeCommonFields>::new(
                                 Identifier::new("a".to_owned()),
-                                Type::TypeLiteral(TypeLiteral::I32Type)
+                                Type::I32Type
                             )),
                             Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
                                 UntypedNodeCommonFields,
@@ -305,7 +305,7 @@ mod tests {
                         VariableDeclaration::<UntypedNodeCommonFields>::new(
                             Rc::new(VariableDeclarator::<UntypedNodeCommonFields>::new(
                                 Identifier::new("b".to_owned()),
-                                Type::TypeLiteral(TypeLiteral::I32Type)
+                                Type::I32Type
                             )),
                             Expression::VariableReference(Rc::new(VariableReference::<
                                 UntypedNodeCommonFields,
@@ -334,18 +334,18 @@ mod tests {
                     UntypedNodeCommonFields,
                 >::new(
                     Identifier::new("add".to_owned()),
-                    Type::TypeLiteral(TypeLiteral::I32Type),
+                    Type::I32Type,
                     vec![
                         Rc::new(Parameter::<UntypedNodeCommonFields>::new(Rc::new(
                             VariableDeclarator::<UntypedNodeCommonFields>::new(
                                 Identifier::new("a".to_owned()),
-                                Type::TypeLiteral(TypeLiteral::I32Type),
+                                Type::I32Type,
                             )
                         ))),
                         Rc::new(Parameter::<UntypedNodeCommonFields>::new(Rc::new(
                             VariableDeclarator::<UntypedNodeCommonFields>::new(
                                 Identifier::new("b".to_owned()),
-                                Type::TypeLiteral(TypeLiteral::I32Type),
+                                Type::I32Type,
                             )
                         )))
                     ],

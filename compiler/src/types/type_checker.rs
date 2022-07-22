@@ -86,7 +86,7 @@ impl PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for TypeCh
         else_block: &Rc<Block<TypedNodeCommonFields>>,
     ) -> IfExpression<TypedNodeCommonFields> {
         IfExpression::<TypedNodeCommonFields>::new(
-            Type::TypeLiteral(TypeLiteral::I32Type),
+            Type::I32Type,
             condition.clone(),
             then_block.clone(),
             else_block.clone(),
@@ -100,11 +100,11 @@ impl PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for TypeCh
     ) -> PrefixExpression<TypedNodeCommonFields> {
         match operator {
             PrefixOperator::Bang => match operand.get_type() {
-                Type::TypeLiteral(TypeLiteral::BoolType) => (),
+                Type::BoolType => (),
                 _ => panic!("Compilation error: incompatible types"),
             },
             PrefixOperator::Minus => match operand.get_type() {
-                Type::TypeLiteral(TypeLiteral::I32Type) => (),
+                Type::I32Type => (),
                 _ => panic!("Compilation error: incompatible types"),
             },
         };
@@ -228,7 +228,7 @@ impl PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for TypeCh
         body: &Rc<Block<TypedNodeCommonFields>>,
     ) -> FunctionDeclaration<TypedNodeCommonFields> {
         FunctionDeclaration::<TypedNodeCommonFields>::new(
-            Type::TypeLiteral(TypeLiteral::UnitType),
+            Type::UnitType,
             identifier.clone(),
             return_type.clone(),
             parameters.clone(),
