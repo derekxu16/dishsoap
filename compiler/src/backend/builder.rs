@@ -1,6 +1,7 @@
 use crate::utils::{identifier_to_c_string, identifier_to_string, string_to_c_string};
 use crate::visitor::{PreOrderVisitor, PreOrderVisitorResponse};
 use dishsoap_parser::ast::*;
+use itertools::Itertools;
 use llvm_sys::core::*;
 pub use llvm_sys::prelude::*;
 use llvm_sys::LLVMIntPredicate;
@@ -98,11 +99,35 @@ impl<'a> Builder<'a> {
         }
     }
 
+    pub fn lower_record_type(&mut self, r#type: &RecordType) -> LLVMTypeRef {
+        let element_count = r#type.fields.keys().len();
+        let sorted_keys = r#type.fields.keys().sorted().collect::<Vec<&String>>();
+        let mut element_types = sorted_keys
+            .iter()
+            .map(|k| self.lower_type(r#type.fields.get(&**k).unwrap()))
+            .collect::<Vec<LLVMTypeRef>>();
+
+        unsafe {
+            LLVMPointerType(
+                LLVMStructType(
+                    element_types.as_mut_ptr(),
+                    element_count as u32,
+                    false.into(),
+                ),
+                0,
+            )
+        }
+    }
+
+    pub fn lower_function_type(&mut self, r#_type: &FunctionType) -> LLVMTypeRef {
+        unimplemented!()
+    }
+
     pub fn lower_type(&mut self, r#type: &Type) -> LLVMTypeRef {
         match r#type {
             Type::TypeLiteral(t) => self.lower_type_literal(t),
-            Type::RecordType(_t) => unimplemented!(),
-            Type::FunctionType(_t) => unimplemented!(),
+            Type::RecordType(t) => self.lower_record_type(&**t),
+            Type::FunctionType(t) => self.lower_function_type(&**t),
         }
     }
 
@@ -131,10 +156,33 @@ impl<'a> Builder<'a> {
     }
 
     pub fn lower_record_literal(
-        &self,
-        _record_literal: &RecordLiteral<TypedNodeCommonFields>,
+        &mut self,
+        record_literal: &RecordLiteral<TypedNodeCommonFields>,
     ) -> LLVMValueRef {
-        unimplemented!()
+        unsafe {
+            let record_pointer = LLVMBuildMalloc(
+                *self.builder,
+                // TODO(derekxu16): Record types get lowered to pointer types in every case except
+                // this one. Look for a more elegant way of handling this.
+                LLVMGetElementType(self.lower_type(&record_literal.common_fields.r#type)),
+                string_to_c_string("record_literal_malloc_temp".to_owned()).as_ptr(),
+            );
+            for (index, key) in record_literal.fields.keys().sorted().enumerate() {
+                LLVMBuildStore(
+                    *self.builder,
+                    self.lower_expression(record_literal.fields.get(&*key).unwrap()),
+                    LLVMBuildStructGEP(
+                        *self.builder,
+                        record_pointer,
+                        index as u32,
+                        string_to_c_string("record_literal_field_pointer_temp".to_string())
+                            .as_ptr(),
+                    ),
+                );
+            }
+
+            record_pointer
+        }
     }
 
     pub fn lower_variable_reference(
@@ -368,9 +416,31 @@ impl<'a> Builder<'a> {
 
     pub fn lower_field_access(
         &mut self,
-        _field_access: &FieldAccess<TypedNodeCommonFields>,
+        field_access: &FieldAccess<TypedNodeCommonFields>,
     ) -> LLVMValueRef {
-        unimplemented!()
+        let target_type = match field_access.target.get_type() {
+            Type::RecordType(t) => t,
+            _ => unreachable!(),
+        };
+
+        unsafe {
+            let element_pointer = LLVMBuildStructGEP(
+                *self.builder,
+                self.lower_expression(&field_access.target),
+                target_type
+                    .fields
+                    .keys()
+                    .sorted()
+                    .position(|k| *k == field_access.field_name)
+                    .unwrap() as u32,
+                string_to_c_string("field_access_pointer_temp".to_owned()).as_ptr(),
+            );
+            LLVMBuildLoad(
+                *self.builder,
+                element_pointer,
+                string_to_c_string("field_access_temp".to_owned()).as_ptr(),
+            )
+        }
     }
 
     pub fn lower_expression(
@@ -420,7 +490,7 @@ impl<'a> PreOrderVisitor<TypedNodeCommonFields> for Builder<'a> {
                 parameters,
                 body,
             } => unsafe {
-                let param_count = parameters.len();
+                let parameter_count = parameters.len();
                 let function_type = LLVMFunctionType(
                     self.lower_type(return_type),
                     function_declaration
@@ -429,7 +499,7 @@ impl<'a> PreOrderVisitor<TypedNodeCommonFields> for Builder<'a> {
                         .map(|p| self.lower_type(&p.common_fields.r#type))
                         .collect::<Vec<LLVMTypeRef>>()
                         .as_mut_ptr(),
-                    param_count as u32,
+                    parameter_count as u32,
                     0,
                 );
                 let function = LLVMAddFunction(
@@ -444,13 +514,13 @@ impl<'a> PreOrderVisitor<TypedNodeCommonFields> for Builder<'a> {
                 );
                 LLVMPositionBuilderAtEnd(*self.builder, block);
 
-                let mut raw_vec: Vec<LLVMValueRef> = Vec::with_capacity(param_count);
+                let mut raw_vec: Vec<LLVMValueRef> = Vec::with_capacity(parameter_count);
                 let raw_vec_as_ptr = raw_vec.as_mut_ptr();
                 forget(raw_vec);
 
                 let params = {
                     LLVMGetParams(function, raw_vec_as_ptr);
-                    Vec::from_raw_parts(raw_vec_as_ptr, param_count, param_count)
+                    Vec::from_raw_parts(raw_vec_as_ptr, parameter_count, parameter_count)
                 };
 
                 // Global variables and nested function definitions currently aren't supported,
