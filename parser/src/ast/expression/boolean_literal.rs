@@ -1,4 +1,4 @@
-use crate::{Type, TypeLiteral, TypedNodeCommonFields, UntypedNodeCommonFields};
+use crate::{Type, TypedNodeCommonFields, UntypedNodeCommonFields};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BooleanLiteral<CommonFields> {
@@ -18,7 +18,7 @@ impl BooleanLiteral<UntypedNodeCommonFields> {
 impl BooleanLiteral<TypedNodeCommonFields> {
     pub fn new(value: bool) -> Self {
         BooleanLiteral::<TypedNodeCommonFields> {
-            common_fields: TypedNodeCommonFields::new(Type::TypeLiteral(TypeLiteral::BoolType)),
+            common_fields: TypedNodeCommonFields::new(Type::BoolType),
             value,
         }
     }
