@@ -43,34 +43,10 @@ impl<'ast> Parser<'ast> {
         }
     }
 
-    fn parse_record_type(&mut self) -> RecordType {
-        let mut fields = HashMap::new();
+    fn parse_type_reference(&mut self) -> TypeReference {
+        let identifier = self.parse_identifier();
 
-        match self.lexer.consume(Token::BraceOpen) {
-            Err(e) => panic!("{}", e.message),
-            _ => (),
-        }
-
-        loop {
-            if self.lexer.peek() == Some(Token::BraceClose) {
-                let _ = self.lexer.consume(Token::BraceClose);
-                break;
-            }
-
-            let field_name = self.parse_identifier();
-            match self.lexer.consume(Token::Colon) {
-                Err(e) => panic!("{}", e.message),
-                _ => (),
-            }
-            let field_type = self.parse_type();
-            fields.insert(field_name.name, field_type);
-
-            if self.lexer.peek() == Some(Token::Comma) {
-                let _ = self.lexer.consume(Token::Comma);
-            }
-        }
-
-        RecordType::new(fields)
+        TypeReference::new(identifier)
     }
 
     fn parse_type(&mut self) -> Type {
@@ -83,7 +59,7 @@ impl<'ast> Parser<'ast> {
                 Some(Token::I32PrimitiveKeyword) => Type::I32Type,
                 _ => panic!("Compilation error"),
             },
-            Some(Token::BraceOpen) => Type::RecordType(Rc::new(self.parse_record_type())),
+            Some(Token::Identifier) => Type::TypeReference(Rc::new(self.parse_type_reference())),
             Some(Token::ParenOpen) => todo!("Support function type annotations"),
             _ => panic!("Compilation error"),
         }
@@ -107,14 +83,16 @@ impl<'ast> Parser<'ast> {
         }
     }
 
-    fn parse_record_literal(&mut self) -> RecordLiteral<UntypedNodeCommonFields> {
-        let mut fields = HashMap::new();
-
+    fn parse_object_literal(
+        &mut self,
+        class_name: Identifier,
+    ) -> ObjectLiteral<UntypedNodeCommonFields> {
         match self.lexer.consume(Token::BraceOpen) {
             Err(e) => panic!("{}", e.message),
             _ => (),
         }
 
+        let mut fields = HashMap::new();
         loop {
             if self.lexer.peek() == Some(Token::BraceClose) {
                 let _ = self.lexer.consume(Token::BraceClose);
@@ -138,15 +116,21 @@ impl<'ast> Parser<'ast> {
             }
         }
 
-        RecordLiteral::<UntypedNodeCommonFields>::new(fields)
+        ObjectLiteral::<UntypedNodeCommonFields>::new(class_name, fields)
     }
 
     /**
-     * Tries to parse a VariableReference or FunctionCall, returns None if unsuccessful.
+     * Tries to parse an ObjectLiteral, FunctionCall, or VariableReference. Returns None if
+     * unsuccessful.
      */
-    fn parse_reference(&mut self) -> Expression<UntypedNodeCommonFields> {
+    fn parse_object_literal_or_function_call_or_variable_reference(
+        &mut self,
+    ) -> Expression<UntypedNodeCommonFields> {
         let identifier = self.parse_identifier();
         match self.lexer.peek() {
+            Some(Token::BraceOpen) => {
+                Expression::ObjectLiteral(Rc::new(self.parse_object_literal(identifier)))
+            }
             Some(Token::ParenOpen) => {
                 let arguments = self.parse_arguments();
                 Expression::FunctionCall(Rc::new(FunctionCall::<UntypedNodeCommonFields>::new(
@@ -256,10 +240,9 @@ impl<'ast> Parser<'ast> {
             Some(Token::IntegerLiteral) => Some(Expression::IntegerLiteral(Rc::new(
                 self.parse_integer_literal(),
             ))),
-            Some(Token::BraceOpen) => Some(Expression::RecordLiteral(Rc::new(
-                self.parse_record_literal(),
-            ))),
-            Some(Token::Identifier) => Some(self.parse_reference()),
+            Some(Token::Identifier) => {
+                Some(self.parse_object_literal_or_function_call_or_variable_reference())
+            }
             Some(Token::IfKeyword) => Some(Expression::IfExpression(Rc::new(
                 self.parse_if_expression(),
             ))),
@@ -454,7 +437,41 @@ impl<'ast> Parser<'ast> {
     //     expression
     // }
 
-    fn parse_function_declaraction(&mut self) -> FunctionDeclaration<UntypedNodeCommonFields> {
+    fn parse_class_declaration(&mut self) -> ClassDeclaration {
+        match self.lexer.consume(Token::ClassKeyword) {
+            Err(e) => panic!("{}", e.message),
+            _ => (),
+        }
+        let identifier = self.parse_identifier();
+
+        let mut fields = HashMap::new();
+        match self.lexer.consume(Token::BraceOpen) {
+            Err(e) => panic!("{}", e.message),
+            _ => (),
+        }
+        loop {
+            if self.lexer.peek() == Some(Token::BraceClose) {
+                let _ = self.lexer.consume(Token::BraceClose);
+                break;
+            }
+
+            let field_name = self.parse_identifier();
+            match self.lexer.consume(Token::Colon) {
+                Err(e) => panic!("{}", e.message),
+                _ => (),
+            }
+            let field_type = self.parse_type();
+            fields.insert(field_name.name, field_type);
+
+            if self.lexer.peek() == Some(Token::Comma) {
+                let _ = self.lexer.consume(Token::Comma);
+            }
+        }
+
+        ClassDeclaration::new(identifier, fields)
+    }
+
+    fn parse_function_declaration(&mut self) -> FunctionDeclaration<UntypedNodeCommonFields> {
         match self.lexer.consume(Token::FuncKeyword) {
             Err(e) => panic!("{}", e.message),
             _ => (),
@@ -525,13 +542,15 @@ impl<'ast> Parser<'ast> {
     }
 
     fn parse_source_file(&mut self) -> SourceFile<UntypedNodeCommonFields> {
-        let mut declarations: Vec<Rc<Declaration<UntypedNodeCommonFields>>> = Vec::new();
+        let mut declarations: Vec<Declaration<UntypedNodeCommonFields>> = Vec::new();
+        let mut type_declarations: Vec<ClassDeclaration> = Vec::new();
 
         loop {
             let t = self.lexer.peek();
             match t {
-                Some(Token::FuncKeyword) => declarations.push(Rc::new(
-                    Declaration::FunctionDeclaration(Rc::new(self.parse_function_declaraction())),
+                Some(Token::ClassKeyword) => type_declarations.push(self.parse_class_declaration()),
+                Some(Token::FuncKeyword) => declarations.push(Declaration::FunctionDeclaration(
+                    Rc::new(self.parse_function_declaration()),
                 )),
                 None => {
                     // EOF
@@ -541,7 +560,7 @@ impl<'ast> Parser<'ast> {
             }
         }
 
-        SourceFile::new(declarations)
+        SourceFile::new(declarations, type_declarations)
     }
 
     /// Parses a file and returns a [Node::SourceFile]. This is the entry point for parsing an

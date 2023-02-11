@@ -51,10 +51,14 @@ func test() -> P_i32 {
 }
 ";
 
-pub const RECORD_INITIALIZATION_AND_FIELD_ACCESS: &str = "
+pub const OBJECT_INITIALIZATION_AND_FIELD_ACCESS: &str = "
+class X {c: P_i32}
+
+class Y {a: P_bool, b: X}
+
 func test() -> P_i32 {
-    let x: {a: P_bool, b: {c: P_i32}} = {a: true, b: {c: 123}};
-    x.b.c
+    let y: Y = Y {a: true, b: X {c: 123}};
+    y.b.c
 }
 ";
 

@@ -89,8 +89,8 @@ mod tests {
 
     #[test]
     #[serial]
-    fn record_initializations_and_field_accesses() {
-        let result = interpret(test_inputs::RECORD_INITIALIZATION_AND_FIELD_ACCESS);
+    fn object_initializations_and_field_accesses() {
+        let result = interpret(test_inputs::OBJECT_INITIALIZATION_AND_FIELD_ACCESS);
         assert_eq!(result, 123);
     }
 

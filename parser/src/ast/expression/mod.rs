@@ -5,8 +5,8 @@ mod field_access;
 mod function_call;
 mod if_expression;
 mod integer_literal;
+mod object_literal;
 mod prefix_expression;
-mod record_literal;
 mod unit_literal;
 mod variable_reference;
 
@@ -17,7 +17,7 @@ pub use field_access::*;
 pub use function_call::*;
 pub use if_expression::*;
 pub use integer_literal::*;
+pub use object_literal::*;
 pub use prefix_expression::*;
-pub use record_literal::*;
 pub use unit_literal::*;
 pub use variable_reference::*;

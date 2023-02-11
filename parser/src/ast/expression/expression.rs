@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use crate::{
     BinaryExpression, BooleanLiteral, FieldAccess, FunctionCall, IfExpression, IntegerLiteral,
-    PrefixExpression, RecordLiteral, Type, TypedNodeCommonFields, UnitLiteral, VariableReference,
+    ObjectLiteral, PrefixExpression, Type, TypedNodeCommonFields, UnitLiteral, VariableReference,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -10,7 +10,7 @@ pub enum Expression<CommonFields: Clone> {
     UnitLiteral(Rc<UnitLiteral<CommonFields>>),
     BooleanLiteral(Rc<BooleanLiteral<CommonFields>>),
     IntegerLiteral(Rc<IntegerLiteral<CommonFields>>),
-    RecordLiteral(Rc<RecordLiteral<CommonFields>>),
+    ObjectLiteral(Rc<ObjectLiteral<CommonFields>>),
     VariableReference(Rc<VariableReference<CommonFields>>),
     FunctionCall(Rc<FunctionCall<CommonFields>>),
     IfExpression(Rc<IfExpression<CommonFields>>),
@@ -25,7 +25,7 @@ impl Expression<TypedNodeCommonFields> {
             Expression::UnitLiteral(u) => &u.common_fields.r#type,
             Expression::BooleanLiteral(b) => &b.common_fields.r#type,
             Expression::IntegerLiteral(i) => &i.common_fields.r#type,
-            Expression::RecordLiteral(r) => &r.common_fields.r#type,
+            Expression::ObjectLiteral(r) => &r.common_fields.r#type,
             Expression::VariableReference(r) => &r.common_fields.r#type,
             Expression::FunctionCall(c) => &c.common_fields.r#type,
             Expression::IfExpression(e) => &e.common_fields.r#type,
