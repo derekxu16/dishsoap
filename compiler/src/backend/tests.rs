@@ -89,7 +89,15 @@ mod tests {
 
     #[test]
     #[serial]
-    fn object_initializations_and_field_accesses() {
+    fn object_initialization_with_type_arguments_and_field_access() {
+        let result =
+            interpret(test_inputs::OBJECT_INITIALIZATION_WITH_TYPE_ARGUMENTS_AND_FIELD_ACCESS);
+        assert_eq!(result, 123);
+    }
+
+    #[test]
+    #[serial]
+    fn object_initialization_and_field_access() {
         let result = interpret(test_inputs::OBJECT_INITIALIZATION_AND_FIELD_ACCESS);
         assert_eq!(result, 123);
     }

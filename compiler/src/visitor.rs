@@ -11,7 +11,7 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
 
     fn process_object_literal(
         &mut self,
-        class_name: &Identifier,
+        class: &TypeReference,
         fields: &HashMap<String, Expression<ReturnTypeCommonFields>>,
     ) -> ObjectLiteral<ReturnTypeCommonFields>;
 
@@ -81,7 +81,7 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
                     })
                     .collect();
                 Expression::ObjectLiteral(Rc::new(
-                    self.process_object_literal(&r.class_name, &processed_fields),
+                    self.process_object_literal(&r.class, &processed_fields),
                 ))
             }
             Expression::VariableReference(r) => Expression::VariableReference(Rc::new(

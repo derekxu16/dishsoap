@@ -1,25 +1,25 @@
 use std::collections::HashMap;
 
 use crate::{
-    ast::{Identifier, Type},
+    ast::{Type, TypeReference},
     Expression, TypedNodeCommonFields, UntypedNodeCommonFields,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ObjectLiteral<CommonFields: Clone> {
     pub common_fields: CommonFields,
-    pub class_name: Identifier,
+    pub class: TypeReference,
     pub fields: HashMap<String, Expression<CommonFields>>,
 }
 
 impl ObjectLiteral<UntypedNodeCommonFields> {
     pub fn new(
-        class_name: Identifier,
+        class: TypeReference,
         fields: HashMap<String, Expression<UntypedNodeCommonFields>>,
     ) -> Self {
         ObjectLiteral::<UntypedNodeCommonFields> {
             common_fields: UntypedNodeCommonFields::new(),
-            class_name,
+            class,
             fields,
         }
     }
@@ -28,12 +28,12 @@ impl ObjectLiteral<UntypedNodeCommonFields> {
 impl ObjectLiteral<TypedNodeCommonFields> {
     pub fn new(
         r#type: Type,
-        class_name: Identifier,
+        class: TypeReference,
         fields: HashMap<String, Expression<TypedNodeCommonFields>>,
     ) -> Self {
         ObjectLiteral::<TypedNodeCommonFields> {
             common_fields: TypedNodeCommonFields::new(r#type),
-            class_name,
+            class,
             fields,
         }
     }

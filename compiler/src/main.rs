@@ -13,10 +13,6 @@ use dishsoap_parser::{
 use llvm_sys::bit_writer::LLVMWriteBitcodeToFile;
 use llvm_sys::core::*;
 use llvm_sys::prelude::{LLVMContextRef, LLVMModuleRef};
-use types::{
-    build_environment_from_top_level_declarations,
-    build_type_environment_from_top_level_declarations,
-};
 // use llvm_sys::target_machine::LLVMGetDefaultTargetTriple;
 use crate::types::TypeChecker;
 use backend::builder::Builder;
@@ -39,11 +35,8 @@ fn parse_file(file_content: &String) -> Node<UntypedNodeCommonFields> {
 }
 
 pub fn get_llvm_module_from_file(context: LLVMContextRef, file_content: &String) -> LLVMModuleRef {
-    let untyped_ast = &parse_file(file_content);
-    let mut type_checker = TypeChecker::new(
-        &build_environment_from_top_level_declarations(untyped_ast),
-        &build_type_environment_from_top_level_declarations(untyped_ast),
-    );
+    let untyped_ast = parse_file(file_content);
+    let mut type_checker = TypeChecker::new(&untyped_ast);
     let typed_ast = type_checker.visit(&untyped_ast);
 
     unsafe {

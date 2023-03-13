@@ -51,6 +51,17 @@ func test() -> P_i32 {
 }
 ";
 
+pub const OBJECT_INITIALIZATION_WITH_TYPE_ARGUMENTS_AND_FIELD_ACCESS: &str = "
+class X<T> {c: T}
+
+class Y<T> {a: P_bool, b: X<T>}
+
+func test() -> P_i32 {
+    let y: Y<P_i32> = Y<P_i32> {a: true, b: X<P_i32> {c: 123}};
+    y.b.c
+}
+";
+
 pub const OBJECT_INITIALIZATION_AND_FIELD_ACCESS: &str = "
 class X {c: P_i32}
 

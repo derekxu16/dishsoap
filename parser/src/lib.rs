@@ -43,10 +43,34 @@ impl<'ast> Parser<'ast> {
         }
     }
 
-    fn parse_type_reference(&mut self) -> TypeReference {
-        let identifier = self.parse_identifier();
+    fn parse_type_arguments(&mut self) -> Vec<Type> {
+        let _ = self.lexer.consume(Token::LessThan);
+        let mut type_arguments = vec![];
+        loop {
+            if self.lexer.peek() == Some(Token::GreaterThan) {
+                let _ = self.lexer.consume(Token::GreaterThan);
+                break;
+            }
 
-        TypeReference::new(identifier)
+            let type_argument = self.parse_type();
+            type_arguments.push(type_argument);
+
+            if self.lexer.peek() == Some(Token::Comma) {
+                let _ = self.lexer.consume(Token::Comma);
+            }
+        }
+
+        type_arguments
+    }
+
+    fn parse_type_reference(&mut self, identifier: Identifier) -> TypeReference {
+        let type_arguments = if self.lexer.peek() == Some(Token::LessThan) {
+            self.parse_type_arguments()
+        } else {
+            vec![]
+        };
+
+        TypeReference::new(identifier, type_arguments)
     }
 
     fn parse_type(&mut self) -> Type {
@@ -59,7 +83,10 @@ impl<'ast> Parser<'ast> {
                 Some(Token::I32PrimitiveKeyword) => Type::I32Type,
                 _ => panic!("Compilation error"),
             },
-            Some(Token::Identifier) => Type::TypeReference(Rc::new(self.parse_type_reference())),
+            Some(Token::Identifier) => {
+                let identfier = self.parse_identifier();
+                Type::TypeReference(Rc::new(self.parse_type_reference(identfier)))
+            }
             Some(Token::ParenOpen) => todo!("Support function type annotations"),
             _ => panic!("Compilation error"),
         }
@@ -85,7 +112,7 @@ impl<'ast> Parser<'ast> {
 
     fn parse_object_literal(
         &mut self,
-        class_name: Identifier,
+        class: TypeReference,
     ) -> ObjectLiteral<UntypedNodeCommonFields> {
         match self.lexer.consume(Token::BraceOpen) {
             Err(e) => panic!("{}", e.message),
@@ -116,7 +143,7 @@ impl<'ast> Parser<'ast> {
             }
         }
 
-        ObjectLiteral::<UntypedNodeCommonFields>::new(class_name, fields)
+        ObjectLiteral::<UntypedNodeCommonFields>::new(class, fields)
     }
 
     /**
@@ -128,8 +155,9 @@ impl<'ast> Parser<'ast> {
     ) -> Expression<UntypedNodeCommonFields> {
         let identifier = self.parse_identifier();
         match self.lexer.peek() {
-            Some(Token::BraceOpen) => {
-                Expression::ObjectLiteral(Rc::new(self.parse_object_literal(identifier)))
+            Some(Token::LessThan) | Some(Token::BraceOpen) => {
+                let type_reference = self.parse_type_reference(identifier);
+                Expression::ObjectLiteral(Rc::new(self.parse_object_literal(type_reference)))
             }
             Some(Token::ParenOpen) => {
                 let arguments = self.parse_arguments();
@@ -444,6 +472,24 @@ impl<'ast> Parser<'ast> {
         }
         let identifier = self.parse_identifier();
 
+        let mut type_parameters = vec![];
+        if self.lexer.peek() == Some(Token::LessThan) {
+            let _ = self.lexer.consume(Token::LessThan);
+            loop {
+                if self.lexer.peek() == Some(Token::GreaterThan) {
+                    let _ = self.lexer.consume(Token::GreaterThan);
+                    break;
+                }
+
+                let type_parameter = self.parse_identifier();
+                type_parameters.push(type_parameter);
+
+                if self.lexer.peek() == Some(Token::Comma) {
+                    let _ = self.lexer.consume(Token::Comma);
+                }
+            }
+        }
+
         let mut fields = HashMap::new();
         match self.lexer.consume(Token::BraceOpen) {
             Err(e) => panic!("{}", e.message),
@@ -468,7 +514,7 @@ impl<'ast> Parser<'ast> {
             }
         }
 
-        ClassDeclaration::new(identifier, fields)
+        ClassDeclaration::new(identifier, type_parameters, fields)
     }
 
     fn parse_function_declaration(&mut self) -> FunctionDeclaration<UntypedNodeCommonFields> {

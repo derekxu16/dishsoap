@@ -222,8 +222,9 @@ mod tests {
     }
 
     #[test]
-    fn object_initializations_and_field_accesses() {
-        let sf_node = parse(test_inputs::OBJECT_INITIALIZATION_AND_FIELD_ACCESS);
+    fn object_initialization_with_type_arguments_and_field_access() {
+        let sf_node =
+            parse(test_inputs::OBJECT_INITIALIZATION_WITH_TYPE_ARGUMENTS_AND_FIELD_ACCESS);
         assert_eq!(
             sf_node,
             Node::SourceFile(Rc::new(SourceFile::new(
@@ -238,13 +239,17 @@ mod tests {
                                     Rc::new(VariableDeclarator::<UntypedNodeCommonFields>::new(
                                         Identifier::new("y".to_owned()),
                                         Type::TypeReference(Rc::new(TypeReference::new(
-                                            Identifier::new("Y".to_owned())
+                                            Identifier::new("Y".to_owned()),
+                                            vec![Type::I32Type]
                                         )))
                                     )),
                                     Expression::ObjectLiteral(Rc::new(ObjectLiteral::<
                                         UntypedNodeCommonFields,
                                     >::new(
-                                        Identifier::new("Y".to_owned()),
+                                        TypeReference::new(
+                                            Identifier::new("Y".to_owned()),
+                                            vec![Type::I32Type]
+                                        ),
                                         HashMap::from([
                                             (
                                                 "a".to_string(),
@@ -258,7 +263,10 @@ mod tests {
                                                 "b".to_string(),
                                                 Expression::ObjectLiteral(Rc::new(
                                                     ObjectLiteral::<UntypedNodeCommonFields>::new(
-                                                        Identifier::new("X".to_owned()),
+                                                        TypeReference::new(
+                                                            Identifier::new("X".to_owned()),
+                                                            vec![Type::I32Type]
+                                                        ),
                                                         HashMap::from([(
                                                             "c".to_string(),
                                                             Expression::IntegerLiteral(Rc::new(
@@ -297,17 +305,131 @@ mod tests {
                 vec![
                     ClassDeclaration::new(
                         Identifier::new("X".to_owned()),
-                        HashMap::from([("c".to_string(), Type::I32Type)]),
+                        vec![Identifier::new("T".to_owned())],
+                        HashMap::from([(
+                            "c".to_string(),
+                            Type::TypeReference(Rc::new(TypeReference::new(
+                                Identifier::new("T".to_owned()),
+                                vec![]
+                            )))
+                        )]),
                     ),
                     ClassDeclaration::new(
                         Identifier::new("Y".to_owned()),
+                        vec![Identifier::new("T".to_owned())],
                         HashMap::from([
                             ("a".to_string(), Type::BoolType),
                             (
                                 "b".to_string(),
-                                Type::TypeReference(Rc::new(TypeReference::new(Identifier::new(
-                                    "X".to_owned()
-                                )))),
+                                Type::TypeReference(Rc::new(TypeReference::new(
+                                    Identifier::new("X".to_owned()),
+                                    vec![Type::TypeReference(Rc::new(TypeReference::new(
+                                        Identifier::new("T".to_owned()),
+                                        vec![]
+                                    )))]
+                                ))),
+                            )
+                        ]),
+                    ),
+                ]
+            )))
+        )
+    }
+
+    #[test]
+    fn object_initialization_and_field_access() {
+        let sf_node = parse(test_inputs::OBJECT_INITIALIZATION_AND_FIELD_ACCESS);
+        assert_eq!(
+            sf_node,
+            Node::SourceFile(Rc::new(SourceFile::new(
+                vec![Declaration::FunctionDeclaration(Rc::new(
+                    FunctionDeclaration::<UntypedNodeCommonFields>::new(
+                        Identifier::new("test".to_owned()),
+                        Type::I32Type,
+                        vec![],
+                        Rc::new(Block::new_with_final_expression(
+                            vec![Statement::Declaration(Declaration::VariableDeclaration(
+                                Rc::new(VariableDeclaration::<UntypedNodeCommonFields>::new(
+                                    Rc::new(VariableDeclarator::<UntypedNodeCommonFields>::new(
+                                        Identifier::new("y".to_owned()),
+                                        Type::TypeReference(Rc::new(TypeReference::new(
+                                            Identifier::new("Y".to_owned()),
+                                            vec![]
+                                        )))
+                                    )),
+                                    Expression::ObjectLiteral(Rc::new(ObjectLiteral::<
+                                        UntypedNodeCommonFields,
+                                    >::new(
+                                        TypeReference::new(Identifier::new("Y".to_owned()), vec![]),
+                                        HashMap::from([
+                                            (
+                                                "a".to_string(),
+                                                Expression::BooleanLiteral(Rc::new(
+                                                    BooleanLiteral::<UntypedNodeCommonFields>::new(
+                                                        true
+                                                    )
+                                                ))
+                                            ),
+                                            (
+                                                "b".to_string(),
+                                                Expression::ObjectLiteral(Rc::new(
+                                                    ObjectLiteral::<UntypedNodeCommonFields>::new(
+                                                        TypeReference::new(
+                                                            Identifier::new("X".to_owned()),
+                                                            vec![]
+                                                        ),
+                                                        HashMap::from([(
+                                                            "c".to_string(),
+                                                            Expression::IntegerLiteral(Rc::new(
+                                                                IntegerLiteral::<
+                                                                    UntypedNodeCommonFields,
+                                                                >::new(
+                                                                    123
+                                                                )
+                                                            ))
+                                                        )])
+                                                    )
+                                                ))
+                                            )
+                                        ])
+                                    )))
+                                ))
+                            ))],
+                            Expression::FieldAccess(Rc::new(
+                                FieldAccess::<UntypedNodeCommonFields>::new(
+                                    Expression::FieldAccess(Rc::new(FieldAccess::<
+                                        UntypedNodeCommonFields,
+                                    >::new(
+                                        Expression::VariableReference(Rc::new(
+                                            VariableReference::<UntypedNodeCommonFields>::new(
+                                                Identifier::new("y".to_owned())
+                                            )
+                                        )),
+                                        "b".to_string()
+                                    ))),
+                                    "c".to_string()
+                                )
+                            ))
+                        )),
+                    ),
+                ),)],
+                vec![
+                    ClassDeclaration::new(
+                        Identifier::new("X".to_owned()),
+                        vec![],
+                        HashMap::from([("c".to_string(), Type::I32Type)]),
+                    ),
+                    ClassDeclaration::new(
+                        Identifier::new("Y".to_owned()),
+                        vec![],
+                        HashMap::from([
+                            ("a".to_string(), Type::BoolType),
+                            (
+                                "b".to_string(),
+                                Type::TypeReference(Rc::new(TypeReference::new(
+                                    Identifier::new("X".to_owned()),
+                                    vec![]
+                                ))),
                             )
                         ]),
                     ),

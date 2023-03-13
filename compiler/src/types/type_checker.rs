@@ -1,24 +1,46 @@
-use std::collections::HashMap;
+use std::iter::FromIterator;
 use std::rc::Rc;
+use std::{cell::RefCell, collections::HashMap};
 
 use crate::visitor::PostOrderVisitor;
 use dishsoap_parser::ast::*;
 
-use super::{Environment, EnvironmentStack};
+use super::{
+    build_environment_from_top_level_declarations,
+    populate_type_environment_from_top_level_declarations, EnvironmentStack, TypeEnvironment,
+};
 
 pub struct TypeChecker {
     environment_stack: EnvironmentStack,
-    type_environment: Environment,
+    type_environment: TypeEnvironment,
 }
 
 impl TypeChecker {
-    pub fn new(
-        initial_environment: &Environment,
-        initial_type_environment: &Environment,
-    ) -> TypeChecker {
+    pub fn new(untyped_ast: &Node<UntypedNodeCommonFields>) -> TypeChecker {
+        let class_name_to_declaration: Rc<RefCell<HashMap<String, ClassDeclaration>>> =
+            match untyped_ast {
+                Node::SourceFile(source_file) => Rc::new(RefCell::new(HashMap::from_iter(
+                    source_file
+                        .type_declarations
+                        .iter()
+                        .map(|d| (d.identifier.name.clone(), d.clone())),
+                ))),
+                _ => unreachable!(),
+            };
+        let type_reference_to_record_type_converters = Rc::new(RefCell::new(HashMap::new()));
+        populate_type_environment_from_top_level_declarations(
+            type_reference_to_record_type_converters.clone(),
+            class_name_to_declaration,
+            &untyped_ast,
+        );
         TypeChecker {
-            environment_stack: EnvironmentStack::new(initial_environment.clone()),
-            type_environment: initial_type_environment.clone(),
+            environment_stack: EnvironmentStack::new(
+                build_environment_from_top_level_declarations(untyped_ast),
+            ),
+            type_environment: TypeEnvironment {
+                type_reference_to_record_type_converters: type_reference_to_record_type_converters
+                    .take(),
+            },
         }
     }
 }
@@ -38,14 +60,18 @@ impl PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for TypeCh
 
     fn process_object_literal(
         &mut self,
-        class_name: &Identifier,
+        class: &TypeReference,
         fields: &HashMap<String, Expression<TypedNodeCommonFields>>,
     ) -> ObjectLiteral<TypedNodeCommonFields> {
-        let r#type = match self.type_environment.get(&class_name.name) {
-            Some(t) => (*t).clone(),
+        let r#type = match self
+            .type_environment
+            .type_reference_to_record_type_converters
+            .get(&class.identifier.name)
+        {
+            Some(converter) => (**converter)(class),
             None => panic!("Compilation error"),
         };
-        ObjectLiteral::<TypedNodeCommonFields>::new(r#type, class_name.clone(), fields.clone())
+        ObjectLiteral::<TypedNodeCommonFields>::new(*r#type, class.clone(), fields.clone())
     }
 
     fn process_variable_reference(
@@ -165,8 +191,12 @@ impl PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for TypeCh
         variable_type: &Type,
     ) -> VariableDeclarator<TypedNodeCommonFields> {
         let r#type = match variable_type {
-            Type::TypeReference(r) => match self.type_environment.get(&(**r).identifier.name) {
-                Some(t) => (*t).clone(),
+            Type::TypeReference(r) => match self
+                .type_environment
+                .type_reference_to_record_type_converters
+                .get(&(**r).identifier.name)
+            {
+                Some(converter) => *(**converter)(r),
                 None => panic!("Compilation error"),
             },
             _ => (*variable_type).clone(),
