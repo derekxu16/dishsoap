@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::{FunctionDeclaration, VariableDeclaration};
+use super::{FunctionDeclaration, VariableDeclaration};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Declaration<CommonFields: Clone> {

@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::{FunctionType, RecordType};
+use super::{FunctionType, RecordType, TypeReference};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
@@ -9,4 +9,5 @@ pub enum Type {
     I32Type,
     RecordType(Rc<RecordType>),
     FunctionType(Rc<FunctionType>),
+    TypeReference(Rc<TypeReference>),
 }

@@ -9,10 +9,11 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
 
     fn process_integer_literal(&mut self, value: &i32) -> IntegerLiteral<ReturnTypeCommonFields>;
 
-    fn process_record_literal(
+    fn process_object_literal(
         &mut self,
+        class_name: &Identifier,
         fields: &HashMap<String, Expression<ReturnTypeCommonFields>>,
-    ) -> RecordLiteral<ReturnTypeCommonFields>;
+    ) -> ObjectLiteral<ReturnTypeCommonFields>;
 
     fn process_variable_reference(
         &mut self,
@@ -65,7 +66,7 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
             Expression::IntegerLiteral(i) => {
                 Expression::IntegerLiteral(Rc::new(self.process_integer_literal(&i.value)))
             }
-            Expression::RecordLiteral(r) => {
+            Expression::ObjectLiteral(r) => {
                 let processed_fields = r
                     .fields
                     .iter()
@@ -79,7 +80,9 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
                         )
                     })
                     .collect();
-                Expression::RecordLiteral(Rc::new(self.process_record_literal(&processed_fields)))
+                Expression::ObjectLiteral(Rc::new(
+                    self.process_object_literal(&r.class_name, &processed_fields),
+                ))
             }
             Expression::VariableReference(r) => Expression::VariableReference(Rc::new(
                 self.process_variable_reference(&r.identifier),
@@ -211,7 +214,7 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
 
     fn after_process_variable_declaration(
         &mut self,
-        _variable_declaration: &VariableDeclaration<InputTypeCommonFields>,
+        _variable_declaration: &VariableDeclaration<ReturnTypeCommonFields>,
     ) -> () {
     }
 
@@ -242,7 +245,7 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
                         &processed_initial_value,
                     );
 
-                    self.after_process_variable_declaration(vd);
+                    self.after_process_variable_declaration(&processed_variable_declaration);
 
                     Statement::Declaration(Declaration::VariableDeclaration(Rc::new(
                         processed_variable_declaration,
@@ -294,7 +297,8 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
 
     fn process_source_file(
         &mut self,
-        declarations: Vec<Rc<Declaration<ReturnTypeCommonFields>>>,
+        declarations: Vec<Declaration<ReturnTypeCommonFields>>,
+        type_declarations: Vec<ClassDeclaration>,
     ) -> SourceFile<ReturnTypeCommonFields>;
 
     /// This method handles traversal of an AST subtree. This should never be re-implemented,
@@ -345,15 +349,15 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
                     .declarations
                     .iter()
                     .map(|d| {
-                        match self.visit(&Node::Statement(Statement::Declaration((**d).clone()))) {
-                            Node::Statement(Statement::Declaration(d)) => Rc::new(d),
+                        match self.visit(&Node::Statement(Statement::Declaration((*d).clone()))) {
+                            Node::Statement(Statement::Declaration(d)) => d,
                             _ => unreachable!(),
                         }
                     })
                     .collect();
 
                 Node::<ReturnTypeCommonFields>::SourceFile(Rc::new(
-                    self.process_source_file(processed_declarations),
+                    self.process_source_file(processed_declarations, sf.type_declarations.clone()),
                 ))
             }
         }
@@ -396,9 +400,9 @@ pub trait PreOrderVisitor<InputTypeCommonFields: Clone> {
     ) -> () {
     }
 
-    fn process_record_literal(
+    fn process_object_literal(
         &mut self,
-        _record_literal: &RecordLiteral<InputTypeCommonFields>,
+        _object_literal: &ObjectLiteral<InputTypeCommonFields>,
     ) -> () {
     }
 
@@ -443,7 +447,7 @@ pub trait PreOrderVisitor<InputTypeCommonFields: Clone> {
             Expression::UnitLiteral(_) => (),
             Expression::BooleanLiteral(b) => self.process_boolean_literal(&**b),
             Expression::IntegerLiteral(i) => self.process_integer_literal(&**i),
-            Expression::RecordLiteral(r) => self.process_record_literal(&**r),
+            Expression::ObjectLiteral(r) => self.process_object_literal(&**r),
             Expression::VariableReference(r) => self.process_variable_reference(&**r),
             Expression::FunctionCall(c) => {
                 if !self.process_function_call(&**c).should_stop_traversing {

@@ -120,6 +120,7 @@ impl<'a> Builder<'a> {
             Type::I32Type => unsafe { LLVMInt32Type() },
             Type::RecordType(t) => self.lower_record_type(&**t),
             Type::FunctionType(t) => self.lower_function_type(&**t),
+            Type::TypeReference(_) => unreachable!(),
         }
     }
 
@@ -147,33 +148,33 @@ impl<'a> Builder<'a> {
         }
     }
 
-    pub fn lower_record_literal(
+    pub fn lower_object_literal(
         &mut self,
-        record_literal: &RecordLiteral<TypedNodeCommonFields>,
+        object_literal: &ObjectLiteral<TypedNodeCommonFields>,
     ) -> LLVMValueRef {
         unsafe {
-            let record_pointer = LLVMBuildMalloc(
+            let object_pointer = LLVMBuildMalloc(
                 *self.builder,
-                // TODO(derekxu16): Record types get lowered to pointer types in every case except
+                // TODO(derekxu16): Object types get lowered to pointer types in every case except
                 // this one. Look for a more elegant way of handling this.
-                LLVMGetElementType(self.lower_type(&record_literal.common_fields.r#type)),
-                string_to_c_string("record_literal_malloc_temp".to_owned()).as_ptr(),
+                LLVMGetElementType(self.lower_type(&object_literal.common_fields.r#type)),
+                string_to_c_string("object_literal_malloc_temp".to_owned()).as_ptr(),
             );
-            for (index, key) in record_literal.fields.keys().sorted().enumerate() {
+            for (index, key) in object_literal.fields.keys().sorted().enumerate() {
                 LLVMBuildStore(
                     *self.builder,
-                    self.lower_expression(record_literal.fields.get(&*key).unwrap()),
+                    self.lower_expression(object_literal.fields.get(&*key).unwrap()),
                     LLVMBuildStructGEP(
                         *self.builder,
-                        record_pointer,
+                        object_pointer,
                         index as u32,
-                        string_to_c_string("record_literal_field_pointer_temp".to_string())
+                        string_to_c_string("object_literal_field_pointer_temp".to_string())
                             .as_ptr(),
                     ),
                 );
             }
 
-            record_pointer
+            object_pointer
         }
     }
 
@@ -443,7 +444,7 @@ impl<'a> Builder<'a> {
             Expression::UnitLiteral(_u) => unimplemented!(),
             Expression::BooleanLiteral(b) => self.lower_boolean_literal(b),
             Expression::IntegerLiteral(i) => self.lower_integer_literal(i),
-            Expression::RecordLiteral(r) => self.lower_record_literal(r),
+            Expression::ObjectLiteral(r) => self.lower_object_literal(r),
             Expression::VariableReference(r) => self.lower_variable_reference(r),
             Expression::FunctionCall(c) => self.lower_function_call(c),
             Expression::IfExpression(e) => self.lower_if_expression(e),

@@ -1,18 +1,24 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use crate::types::environment::{Environment, EnvironmentStack};
 use crate::visitor::PostOrderVisitor;
 use dishsoap_parser::ast::*;
 
+use super::{Environment, EnvironmentStack};
+
 pub struct TypeChecker {
     environment_stack: EnvironmentStack,
+    type_environment: Environment,
 }
 
 impl TypeChecker {
-    pub fn new(initial_environment: Environment) -> TypeChecker {
+    pub fn new(
+        initial_environment: &Environment,
+        initial_type_environment: &Environment,
+    ) -> TypeChecker {
         TypeChecker {
-            environment_stack: EnvironmentStack::new(initial_environment),
+            environment_stack: EnvironmentStack::new(initial_environment.clone()),
+            type_environment: initial_type_environment.clone(),
         }
     }
 }
@@ -30,17 +36,16 @@ impl PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for TypeCh
         IntegerLiteral::<TypedNodeCommonFields>::new(*value)
     }
 
-    fn process_record_literal(
+    fn process_object_literal(
         &mut self,
+        class_name: &Identifier,
         fields: &HashMap<String, Expression<TypedNodeCommonFields>>,
-    ) -> RecordLiteral<TypedNodeCommonFields> {
-        let r#type = Type::RecordType(Rc::new(RecordType::new(
-            fields
-                .iter()
-                .map(|(k, v)| (k.clone(), v.get_type().clone()))
-                .collect(),
-        )));
-        RecordLiteral::<TypedNodeCommonFields>::new(r#type, fields.clone())
+    ) -> ObjectLiteral<TypedNodeCommonFields> {
+        let r#type = match self.type_environment.get(&class_name.name) {
+            Some(t) => (*t).clone(),
+            None => panic!("Compilation error"),
+        };
+        ObjectLiteral::<TypedNodeCommonFields>::new(r#type, class_name.clone(), fields.clone())
     }
 
     fn process_variable_reference(
@@ -139,7 +144,7 @@ impl PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for TypeCh
         field_name: &String,
     ) -> FieldAccess<TypedNodeCommonFields> {
         let target_type = match target.get_type() {
-            Type::RecordType(t) => &**t,
+            Type::RecordType(r) => &**r,
             _ => unreachable!(),
         };
         let field_type = match target_type.fields.get(field_name) {
@@ -159,8 +164,15 @@ impl PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for TypeCh
         identifier: &Identifier,
         variable_type: &Type,
     ) -> VariableDeclarator<TypedNodeCommonFields> {
+        let r#type = match variable_type {
+            Type::TypeReference(r) => match self.type_environment.get(&(**r).identifier.name) {
+                Some(t) => (*t).clone(),
+                None => panic!("Compilation error"),
+            },
+            _ => (*variable_type).clone(),
+        };
         VariableDeclarator::<TypedNodeCommonFields>::new(
-            variable_type.clone(),
+            r#type,
             identifier.clone(),
             variable_type.clone(),
         )
@@ -260,19 +272,20 @@ impl PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for TypeCh
 
     fn after_process_variable_declaration(
         &mut self,
-        variable_declaration: &VariableDeclaration<UntypedNodeCommonFields>,
+        variable_declaration: &VariableDeclaration<TypedNodeCommonFields>,
     ) -> () {
         let declarator = &variable_declaration.variable_declarator;
         self.environment_stack.top().insert(
             declarator.identifier.name.clone(),
-            declarator.variable_type.clone(),
+            declarator.common_fields.r#type.clone(),
         );
     }
 
     fn process_source_file(
         &mut self,
-        declarations: Vec<Rc<Declaration<TypedNodeCommonFields>>>,
+        declarations: Vec<Declaration<TypedNodeCommonFields>>,
+        type_declarations: Vec<ClassDeclaration>,
     ) -> SourceFile<TypedNodeCommonFields> {
-        SourceFile::new(declarations)
+        SourceFile::new(declarations, type_declarations)
     }
 }
