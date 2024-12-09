@@ -26,7 +26,31 @@ func test() -> P_i32 {
 }
 ";
 
-// TODO(derekxu16): Write tests that use this input.
+// TODO(derekxu16): Move the function call tests to the bottom of this file.
+pub const FUNCTION_CALL_ADD: &str = "
+func add(a: P_i32, b: P_i32) -> P_i32 {
+    a + b
+}
+
+func test() -> P_i32 {
+    add(11, 22)
+}
+";
+
+pub const FUNCTION_CALL_UPDATE_STATE: &str = "
+class C<T> {a: T}
+
+func updateState(c: C<P_i32>) -> C<P_i32> {
+    C<P_i32> {a: c.a + 1}
+}
+
+func test() -> P_i32 {
+    let c: C<P_i32> = C<P_i32> {a: 0};
+    updateState(c).a
+}
+";
+
+// TODO(derekxu16): Declare a test() function in this input.
 pub const FUNCTION_CALL_FIB: &str = "
 func fib(n: P_i32) -> P_i32 {
     if (n == 0) {
@@ -38,16 +62,6 @@ func fib(n: P_i32) -> P_i32 {
             fib(n - 1) + fib(n - 2)
         }
     }
-}
-";
-
-pub const FUNCTION_CALL_ADD: &str = "
-func add(a: P_i32, b: P_i32) -> P_i32 {
-    a + b
-}
-
-func test() -> P_i32 {
-    add(11, 22)
 }
 ";
 

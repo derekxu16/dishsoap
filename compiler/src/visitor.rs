@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::Deref, rc::Rc};
+use std::{collections::HashMap, rc::Rc};
 
 use dishsoap_parser::ast::*;
 
@@ -91,7 +91,7 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
                 let processed_arguments = c
                     .arguments
                     .iter()
-                    .map(|a| match self.visit(&Node::Expression(a.deref().clone())) {
+                    .map(|a| match self.visit(&Node::Expression(a.clone())) {
                         Node::Expression(e) => e,
                         _ => unreachable!(),
                     })
@@ -166,6 +166,12 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
         variable_type: &Type,
     ) -> VariableDeclarator<ReturnTypeCommonFields>;
 
+    fn after_process_variable_declarator(
+        &mut self,
+        _variable_declarator: &VariableDeclarator<ReturnTypeCommonFields>,
+    ) -> () {
+    }
+
     fn process_parameter(
         &mut self,
         variable_declarator: &Rc<VariableDeclarator<ReturnTypeCommonFields>>,
@@ -197,7 +203,11 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
         body: &Rc<Block<ReturnTypeCommonFields>>,
     ) -> FunctionDeclaration<ReturnTypeCommonFields>;
 
-    fn after_process_function_declaration(&mut self) -> () {}
+    fn after_process_function_declaration(
+        &mut self,
+        _function_declaration: &FunctionDeclaration<ReturnTypeCommonFields>,
+    ) -> () {
+    }
 
     fn before_process_variable_declaration(
         &mut self,
@@ -275,7 +285,7 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
                         &processed_body,
                     );
 
-                    self.after_process_function_declaration();
+                    self.after_process_function_declaration(&processed_function_declaration);
 
                     Statement::Declaration(Declaration::FunctionDeclaration(Rc::new(
                         processed_function_declaration,
@@ -308,9 +318,14 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
             Node::Identifier(_) => unreachable!(),
             Node::Type(_) => unreachable!(),
             Node::Expression(e) => Node::Expression(self.process_expression(&e)),
-            Node::VariableDeclarator(d) => Node::VariableDeclarator(Rc::new(
-                self.process_variable_declarator(&d.identifier, &d.variable_type),
-            )),
+            Node::VariableDeclarator(d) => {
+                let processed_variable_declarator =
+                    self.process_variable_declarator(&d.identifier, &d.variable_type);
+
+                self.after_process_variable_declarator(&processed_variable_declarator);
+
+                Node::VariableDeclarator(Rc::new(processed_variable_declarator))
+            }
             Node::Parameter(p) => {
                 let processed_variable_declarator =
                     match self.visit(&Node::VariableDeclarator(p.variable_declarator.clone())) {
@@ -332,7 +347,7 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
                     })
                     .collect();
                 let processed_final_expresion = match &b.final_expression {
-                    Some(fe) => match self.visit(&Node::Expression(fe.deref().clone())) {
+                    Some(fe) => match self.visit(&Node::Expression(fe.clone())) {
                         Node::Expression(e) => Some(e),
                         _ => unreachable!(),
                     },
@@ -453,7 +468,7 @@ pub trait PreOrderVisitor<InputTypeCommonFields: Clone> {
                 if !self.process_function_call(&**c).should_stop_traversing {
                     c.arguments
                         .iter()
-                        .for_each(|a| self.visit(&Node::Expression(a.deref().clone())));
+                        .for_each(|a| self.visit(&Node::Expression(a.clone())));
                 }
             }
             Expression::IfExpression(e) => {
@@ -573,9 +588,9 @@ pub trait PreOrderVisitor<InputTypeCommonFields: Clone> {
                 if !self.process_block(&**b).should_stop_traversing {
                     b.statements
                         .iter()
-                        .for_each(|s| self.visit(&Node::Statement(s.deref().clone())));
+                        .for_each(|s| self.visit(&Node::Statement(s.clone())));
                     match &b.final_expression {
-                        Some(fe) => self.visit(&Node::Expression(fe.deref().clone())),
+                        Some(fe) => self.visit(&Node::Expression(fe.clone())),
                         None => (),
                     };
                 }
@@ -586,9 +601,7 @@ pub trait PreOrderVisitor<InputTypeCommonFields: Clone> {
             Node::SourceFile(sf) => {
                 if !self.process_source_file(&**sf).should_stop_traversing {
                     sf.declarations.iter().for_each(|d| {
-                        self.visit(&Node::Statement(Statement::Declaration(
-                            d.deref().deref().clone(),
-                        )));
+                        self.visit(&Node::Statement(Statement::Declaration(d.clone())));
                     });
                 }
             }

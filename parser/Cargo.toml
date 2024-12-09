@@ -7,3 +7,6 @@ edition = "2018"
 
 [dependencies]
 dishsoap-lexer = { path = "../lexer" }
+
+[dev-dependencies]
+pretty_assertions = "1.4.1"

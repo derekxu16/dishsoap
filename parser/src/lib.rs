@@ -281,15 +281,15 @@ impl<'ast> Parser<'ast> {
                 let _ = self.lexer.consume(Token::ParenOpen);
                 let expression: Option<Expression<UntypedNodeCommonFields>> =
                     self.parse_expression(precedence);
-                if expression.is_none() {
-                    panic!("Compilation error");
-                }
                 match self.lexer.consume(Token::ParenClose) {
                     Err(e) => panic!("{}", e.message),
                     _ => (),
                 }
 
-                expression
+                expression.or(Some(Expression::UnitLiteral(Rc::new(UnitLiteral::<
+                    UntypedNodeCommonFields,
+                >::new(
+                )))))
             }
             _ => None,
         };

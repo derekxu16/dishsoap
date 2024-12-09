@@ -82,9 +82,16 @@ mod tests {
 
     #[test]
     #[serial]
-    fn function_calls() {
+    fn function_call_add() {
         let result = interpret(test_inputs::FUNCTION_CALL_ADD);
         assert_eq!(result, 33);
+    }
+
+    #[test]
+    #[serial]
+    fn function_call_update_state() {
+        let result = interpret(test_inputs::FUNCTION_CALL_UPDATE_STATE);
+        assert_eq!(result, 1);
     }
 
     #[test]

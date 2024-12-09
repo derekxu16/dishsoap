@@ -7,7 +7,6 @@ pub use llvm_sys::prelude::*;
 use llvm_sys::LLVMIntPredicate;
 use std::collections::HashMap;
 use std::mem::forget;
-use std::ops::Deref;
 use std::rc::Rc;
 
 // #[derive(Debug, Clone, PartialEq, Eq)]
@@ -109,8 +108,20 @@ impl<'a> Builder<'a> {
         }
     }
 
-    pub fn lower_function_type(&mut self, r#_type: &FunctionType) -> LLVMTypeRef {
-        unimplemented!()
+    pub fn lower_function_type(&mut self, r#type: &FunctionType) -> LLVMTypeRef {
+        unsafe {
+            LLVMFunctionType(
+                self.lower_type(&r#type.return_type),
+                r#type
+                    .parameter_types
+                    .iter()
+                    .map(|t| self.lower_type(t))
+                    .collect::<Vec<LLVMTypeRef>>()
+                    .as_mut_ptr(),
+                r#type.parameter_types.len() as u32,
+                0,
+            )
+        }
     }
 
     pub fn lower_type(&mut self, r#type: &Type) -> LLVMTypeRef {
@@ -477,24 +488,15 @@ impl<'a> PreOrderVisitor<TypedNodeCommonFields> for Builder<'a> {
     ) -> PreOrderVisitorResponse {
         match function_declaration {
             FunctionDeclaration {
-                common_fields: _,
+                common_fields,
                 identifier,
-                return_type,
+                return_type: _,
                 parameters,
                 body,
             } => unsafe {
                 let parameter_count = parameters.len();
-                let function_type = LLVMFunctionType(
-                    self.lower_type(return_type),
-                    function_declaration
-                        .parameters
-                        .iter()
-                        .map(|p| self.lower_type(&p.common_fields.r#type))
-                        .collect::<Vec<LLVMTypeRef>>()
-                        .as_mut_ptr(),
-                    parameter_count as u32,
-                    0,
-                );
+                let function_type = self.lower_type(&common_fields.r#type);
+
                 let function = LLVMAddFunction(
                     *self.module,
                     identifier_to_c_string(identifier).as_ptr(),
@@ -538,7 +540,7 @@ impl<'a> PreOrderVisitor<TypedNodeCommonFields> for Builder<'a> {
                 match &body.final_expression {
                     Some(e) => {
                         self.visit(&Node::Statement(Statement::ReturnStatement(Rc::new(
-                            ReturnStatement::new(e.deref().clone()),
+                            ReturnStatement::new(e.clone()),
                         ))));
                     }
                     None => (),

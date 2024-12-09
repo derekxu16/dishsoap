@@ -12,3 +12,6 @@ dishsoap-parser = { path = "../parser" }
 itertools = "0.10.3"
 llvm-sys = { version = "130" }
 serial_test = { version = "0.6.0" }
+
+[dev-dependencies]
+pretty_assertions = "1.4.1"

@@ -8,12 +8,13 @@ use std::rc::Rc;
 
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     fn define_test_body(body: Rc<Block<TypedNodeCommonFields>>) -> Node<TypedNodeCommonFields> {
         Node::SourceFile(Rc::new(SourceFile::new(
             vec![Declaration::FunctionDeclaration(Rc::new(
                 FunctionDeclaration::<TypedNodeCommonFields>::new(
-                    Type::UnitType,
+                    Type::FunctionType(Rc::new(FunctionType::new(vec![], Type::I32Type))),
                     Identifier::new("test".to_owned()),
                     Type::I32Type,
                     vec![],
@@ -41,7 +42,7 @@ mod tests {
             Node::SourceFile(Rc::new(SourceFile::new(
                 vec![Declaration::FunctionDeclaration(Rc::new(
                     FunctionDeclaration::<TypedNodeCommonFields>::new(
-                        Type::UnitType,
+                        Type::FunctionType(Rc::new(FunctionType::new(vec![], Type::BoolType))),
                         Identifier::new("test".to_owned()),
                         Type::BoolType,
                         vec![],
@@ -165,7 +166,7 @@ mod tests {
     }
 
     #[test]
-    fn function_calls() {
+    fn function_call_add() {
         let sf_node = parse_and_check(test_inputs::FUNCTION_CALL_ADD);
         assert_eq!(
             sf_node,
@@ -174,7 +175,10 @@ mod tests {
                     Declaration::FunctionDeclaration(Rc::new(FunctionDeclaration::<
                         TypedNodeCommonFields,
                     >::new(
-                        Type::UnitType,
+                        Type::FunctionType(Rc::new(FunctionType::new(
+                            vec![Type::I32Type, Type::I32Type],
+                            Type::I32Type
+                        ))),
                         Identifier::new("add".to_owned()),
                         Type::I32Type,
                         vec![
@@ -220,7 +224,7 @@ mod tests {
                     Declaration::FunctionDeclaration(Rc::new(FunctionDeclaration::<
                         TypedNodeCommonFields,
                     >::new(
-                        Type::UnitType,
+                        Type::FunctionType(Rc::new(FunctionType::new(vec![], Type::I32Type))),
                         Identifier::new("test".to_owned(),),
                         Type::I32Type,
                         vec![],
@@ -253,6 +257,155 @@ mod tests {
     }
 
     #[test]
+    fn function_call_update_state() {
+        let sf_node = parse_and_check(test_inputs::FUNCTION_CALL_UPDATE_STATE);
+
+        let c_type = Type::RecordType(Rc::new(RecordType::new(HashMap::from([(
+            "a".to_string(),
+            Type::I32Type,
+        )]))));
+        let c_dot_a_field_access =
+            Expression::FieldAccess(Rc::new(FieldAccess::<TypedNodeCommonFields>::new(
+                Type::I32Type,
+                Expression::VariableReference(Rc::new(
+                    VariableReference::<TypedNodeCommonFields>::new(
+                        c_type.clone(),
+                        Identifier::new("c".to_owned()),
+                    ),
+                )),
+                "a".to_string(),
+            )));
+
+        assert_eq!(
+            sf_node,
+            Node::SourceFile(Rc::new(SourceFile::new(
+                vec![
+                    Declaration::FunctionDeclaration(Rc::new(FunctionDeclaration::<
+                        TypedNodeCommonFields,
+                    >::new(
+                        Type::FunctionType(Rc::new(FunctionType::new(
+                            vec![c_type.clone()],
+                            c_type.clone(),
+                        ))),
+                        Identifier::new("updateState".to_owned()),
+                        Type::TypeReference(Rc::new(TypeReference::new(
+                            Identifier::new("C".to_owned()),
+                            vec![Type::I32Type]
+                        ))),
+                        vec![Rc::new(Parameter::<TypedNodeCommonFields>::new(
+                            c_type.clone(),
+                            Rc::new(VariableDeclarator::<TypedNodeCommonFields>::new(
+                                c_type.clone(),
+                                Identifier::new("c".to_owned()),
+                                Type::TypeReference(Rc::new(TypeReference::new(
+                                    Identifier::new("C".to_owned()),
+                                    vec![Type::I32Type]
+                                )))
+                            ))
+                        ))],
+                        Rc::new(Block::new_with_final_expression(
+                            vec![],
+                            Expression::ObjectLiteral(Rc::new(ObjectLiteral::<
+                                TypedNodeCommonFields,
+                            >::new(
+                                c_type.clone(),
+                                TypeReference::new(
+                                    Identifier::new("C".to_owned()),
+                                    vec![Type::I32Type]
+                                ),
+                                HashMap::from([(
+                                    "a".to_string(),
+                                    Expression::BinaryExpression(Rc::new(BinaryExpression::<
+                                        TypedNodeCommonFields,
+                                    >::new(
+                                        Type::I32Type,
+                                        c_dot_a_field_access,
+                                        InfixOperator::Plus,
+                                        Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
+                                            TypedNodeCommonFields,
+                                        >::new(
+                                            1
+                                        )))
+                                    )))
+                                ),])
+                            )))
+                        ))
+                    ))),
+                    Declaration::FunctionDeclaration(Rc::new(FunctionDeclaration::<
+                        TypedNodeCommonFields,
+                    >::new(
+                        Type::FunctionType(Rc::new(FunctionType::new(vec![], Type::I32Type))),
+                        Identifier::new("test".to_owned(),),
+                        Type::I32Type,
+                        vec![],
+                        Rc::new(Block::new_with_final_expression(
+                            vec![Statement::Declaration(Declaration::VariableDeclaration(
+                                Rc::new(VariableDeclaration::<TypedNodeCommonFields>::new(
+                                    c_type.clone(),
+                                    Rc::new(VariableDeclarator::<TypedNodeCommonFields>::new(
+                                        c_type.clone(),
+                                        Identifier::new("c".to_owned()),
+                                        Type::TypeReference(Rc::new(TypeReference::new(
+                                            Identifier::new("C".to_owned()),
+                                            vec![Type::I32Type]
+                                        )))
+                                    )),
+                                    Expression::ObjectLiteral(Rc::new(ObjectLiteral::<
+                                        TypedNodeCommonFields,
+                                    >::new(
+                                        c_type.clone(),
+                                        TypeReference::new(
+                                            Identifier::new("C".to_owned()),
+                                            vec![Type::I32Type]
+                                        ),
+                                        HashMap::from([(
+                                            "a".to_string(),
+                                            Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
+                                                TypedNodeCommonFields,
+                                            >::new(
+                                                0
+                                            )))
+                                        ),])
+                                    )))
+                                ))
+                            )),],
+                            Expression::FieldAccess(Rc::new(
+                                FieldAccess::<TypedNodeCommonFields>::new(
+                                    Type::I32Type,
+                                    Expression::FunctionCall(Rc::new(FunctionCall::<
+                                        TypedNodeCommonFields,
+                                    >::new(
+                                        c_type.clone(),
+                                        Identifier::new("updateState".to_owned()),
+                                        vec![Expression::VariableReference(Rc::new(
+                                            VariableReference::<TypedNodeCommonFields>::new(
+                                                c_type.clone(),
+                                                Identifier::new("c".to_owned()),
+                                            ),
+                                        ))],
+                                    ))),
+                                    "a".to_string(),
+                                )
+                            )),
+                        ))
+                    )),),
+                ],
+                vec![ClassDeclaration::new(
+                    Identifier::new("C".to_owned()),
+                    vec![Identifier::new("T".to_owned())],
+                    HashMap::from([(
+                        "a".to_string(),
+                        Type::TypeReference(Rc::new(TypeReference::new(
+                            Identifier::new("T".to_owned()),
+                            vec![]
+                        )))
+                    )]),
+                )]
+            )))
+        );
+    }
+
+    #[test]
     fn object_initialization_with_type_arguments_and_field_access() {
         let sf_node = parse_and_check(
             test_inputs::OBJECT_INITIALIZATION_WITH_TYPE_ARGUMENTS_AND_FIELD_ACCESS,
@@ -272,7 +425,7 @@ mod tests {
             Node::SourceFile(Rc::new(SourceFile::new(
                 vec![Declaration::FunctionDeclaration(Rc::new(
                     FunctionDeclaration::<TypedNodeCommonFields>::new(
-                        Type::UnitType,
+                        Type::FunctionType(Rc::new(FunctionType::new(vec![], Type::I32Type))),
                         Identifier::new("test".to_owned()),
                         Type::I32Type,
                         vec![],
@@ -404,7 +557,7 @@ mod tests {
             Node::SourceFile(Rc::new(SourceFile::new(
                 vec![Declaration::FunctionDeclaration(Rc::new(
                     FunctionDeclaration::<TypedNodeCommonFields>::new(
-                        Type::UnitType,
+                        Type::FunctionType(Rc::new(FunctionType::new(vec![], Type::I32Type))),
                         Identifier::new("test".to_owned()),
                         Type::I32Type,
                         vec![],
@@ -563,7 +716,10 @@ mod tests {
             Node::SourceFile(Rc::new(SourceFile::new(
                 vec![Declaration::FunctionDeclaration(Rc::new(
                     FunctionDeclaration::<TypedNodeCommonFields>::new(
-                        Type::UnitType,
+                        Type::FunctionType(Rc::new(FunctionType::new(
+                            vec![Type::I32Type, Type::I32Type,],
+                            Type::I32Type
+                        ))),
                         Identifier::new("add".to_owned()),
                         Type::I32Type,
                         vec![

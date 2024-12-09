@@ -190,6 +190,8 @@ impl PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for TypeCh
         identifier: &Identifier,
         variable_type: &Type,
     ) -> VariableDeclarator<TypedNodeCommonFields> {
+        // TODO(derekxu16): This should probably happen in a process_type_reference method instead
+        // of here.
         let r#type = match variable_type {
             Type::TypeReference(r) => match self
                 .type_environment
@@ -206,6 +208,16 @@ impl PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for TypeCh
             identifier.clone(),
             variable_type.clone(),
         )
+    }
+
+    fn after_process_variable_declarator(
+        &mut self,
+        variable_declarator: &VariableDeclarator<TypedNodeCommonFields>,
+    ) -> () {
+        self.environment_stack.top().insert(
+            variable_declarator.identifier.name.clone(),
+            variable_declarator.common_fields.r#type.clone(),
+        );
     }
 
     fn process_parameter(
@@ -235,30 +247,9 @@ impl PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for TypeCh
 
     fn before_process_function_declaration(
         &mut self,
-        function_declaration: &FunctionDeclaration<UntypedNodeCommonFields>,
+        _function_declaration: &FunctionDeclaration<UntypedNodeCommonFields>,
     ) -> () {
-        let environment = self.environment_stack.enter_scope();
-
-        let parameter_types = function_declaration
-            .parameters
-            .iter()
-            .map(|p| p.variable_declarator.variable_type.clone())
-            .collect/* ::<Vec<Type>> */();
-        environment.insert(
-            function_declaration.identifier.name.clone(),
-            Type::FunctionType(Rc::new(FunctionType::new(
-                parameter_types,
-                function_declaration.return_type.clone(),
-            ))),
-        );
-
-        function_declaration.parameters.iter().for_each(|p| {
-            let p_declarator = &p.variable_declarator;
-            environment.insert(
-                p_declarator.identifier.name.clone(),
-                p_declarator.variable_type.clone(),
-            );
-        });
+        self.environment_stack.enter_scope();
     }
 
     fn process_function_declaration(
@@ -269,8 +260,28 @@ impl PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for TypeCh
         parameters: &Vec<Rc<Parameter<TypedNodeCommonFields>>>,
         body: &Rc<Block<TypedNodeCommonFields>>,
     ) -> FunctionDeclaration<TypedNodeCommonFields> {
+        let parameter_types = parameters
+            .iter()
+            .map(|p| p.variable_declarator.common_fields.r#type.clone())
+            .collect();
+
+        let r#type = Type::FunctionType(Rc::new(FunctionType::new(
+            parameter_types,
+            match return_type {
+                Type::TypeReference(r) => match self
+                    .type_environment
+                    .type_reference_to_record_type_converters
+                    .get(&(**r).identifier.name)
+                {
+                    Some(converter) => *(**converter)(r),
+                    None => panic!("Compilation error"),
+                },
+                _ => (*return_type).clone(),
+            },
+        )));
+
         FunctionDeclaration::<TypedNodeCommonFields>::new(
-            Type::UnitType,
+            r#type,
             identifier.clone(),
             return_type.clone(),
             parameters.clone(),
@@ -278,8 +289,16 @@ impl PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for TypeCh
         )
     }
 
-    fn after_process_function_declaration(&mut self) -> () {
+    fn after_process_function_declaration(
+        &mut self,
+        function_declaration: &FunctionDeclaration<TypedNodeCommonFields>,
+    ) -> () {
         self.environment_stack.exit_scope();
+
+        self.environment_stack.top().insert(
+            function_declaration.identifier.name.clone(),
+            function_declaration.common_fields.r#type.clone(),
+        );
     }
 
     fn process_variable_declaration(
@@ -298,17 +317,6 @@ impl PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for TypeCh
             variable_declarator.clone(),
             initial_value.clone(),
         )
-    }
-
-    fn after_process_variable_declaration(
-        &mut self,
-        variable_declaration: &VariableDeclaration<TypedNodeCommonFields>,
-    ) -> () {
-        let declarator = &variable_declaration.variable_declarator;
-        self.environment_stack.top().insert(
-            declarator.identifier.name.clone(),
-            declarator.common_fields.r#type.clone(),
-        );
     }
 
     fn process_source_file(
