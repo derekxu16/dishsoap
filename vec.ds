@@ -1,0 +1,41 @@
+class RawVec {
+    capacity: P_i32,
+    start_pointer: P_i32,
+}
+
+func RawVec_new() -> RawVec {
+    RawVec {
+        capacity: 0,
+        start_pointer: 0,
+    }
+}
+
+func RawVec_growBy(v: RawVec, growBy: P_i32) -> P_unit {
+    let next_capacity: P_i32 = v.capacity + growBy;
+    let next_start_pointer: P_i32 = __malloc(next_capacity);
+
+//     __memMove(next_start_pointer, v.start_pointer, v.capacity);
+
+    v.capacity = next_capacity;
+    _free(v.start_pointer)
+    v.start_pointer = next_start_pointer;
+}
+
+// TODO: This should actually be `func RawVec_store<T>(v: RawVec<T>, offset: P_i32, element: T) -> ()`
+func RawVec_store(v: RawVec, offset: P_i32, element: P_i32) {
+    __memStore(v.start_pointer + offset);
+}
+
+// class Vec<T> {
+//     length: P_i32,
+//     buffer: RawVec
+// }
+
+// func Vec_append<T>(v: Vec<T>, element: T) {
+//     if (v.length == v.buffer.capacity) {
+//         RawVec_growBy(buffer, v.length);
+//     }
+//     RawVec_store(buffer, v.length, element);
+//     v.length += 1;
+//     ()
+// }

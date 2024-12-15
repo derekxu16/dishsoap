@@ -6,6 +6,7 @@ pub enum PrefixOperator {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum InfixOperator {
+    // TODO(derekxu16): Remove this.
     Equals,
     DoubleEquals,
     LessThan,
