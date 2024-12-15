@@ -82,20 +82,6 @@ mod tests {
 
     #[test]
     #[serial]
-    fn function_call_add() {
-        let result = interpret(test_inputs::FUNCTION_CALL_ADD);
-        assert_eq!(result, 33);
-    }
-
-    #[test]
-    #[serial]
-    fn function_call_update_state() {
-        let result = interpret(test_inputs::FUNCTION_CALL_UPDATE_STATE);
-        assert_eq!(result, 1);
-    }
-
-    #[test]
-    #[serial]
     fn object_initialization_with_type_arguments_and_field_access() {
         let result =
             interpret(test_inputs::OBJECT_INITIALIZATION_WITH_TYPE_ARGUMENTS_AND_FIELD_ACCESS);
@@ -114,5 +100,19 @@ mod tests {
     fn variable_initializations_and_references() {
         let result = interpret(test_inputs::VARIABLE_INITIALIZATION_AND_REFERENCE_INT);
         assert_eq!(result, 10);
+    }
+
+    #[test]
+    #[serial]
+    fn function_call_add() {
+        let result = interpret(test_inputs::FUNCTION_CALL_ADD);
+        assert_eq!(result, 33);
+    }
+
+    #[test]
+    #[serial]
+    fn function_call_update_state() {
+        let result = interpret(test_inputs::FUNCTION_CALL_UPDATE_STATE);
+        assert_eq!(result, 1);
     }
 }
