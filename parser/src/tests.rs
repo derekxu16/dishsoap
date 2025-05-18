@@ -9,7 +9,7 @@ mod tests {
             vec![Declaration::FunctionDeclaration(Rc::new(
                 FunctionDeclaration::<UntypedNodeCommonFields>::new(
                     Identifier::new("test".to_owned()),
-                    Type::I32Type,
+                    Type::I64Type,
                     vec![],
                     body,
                 ),
@@ -154,7 +154,7 @@ mod tests {
                 vec![Declaration::FunctionDeclaration(Rc::new(
                     FunctionDeclaration::<UntypedNodeCommonFields>::new(
                         Identifier::new("test".to_owned()),
-                        Type::I32Type,
+                        Type::I64Type,
                         vec![],
                         Rc::new(Block::new_with_final_expression(
                             vec![Statement::Declaration(Declaration::VariableDeclaration(
@@ -163,7 +163,7 @@ mod tests {
                                         Identifier::new("y".to_owned()),
                                         Type::TypeReference(Rc::new(TypeReference::new(
                                             Identifier::new("Y".to_owned()),
-                                            vec![Type::I32Type]
+                                            vec![Type::I64Type]
                                         )))
                                     )),
                                     Expression::ObjectLiteral(Rc::new(ObjectLiteral::<
@@ -171,7 +171,7 @@ mod tests {
                                     >::new(
                                         TypeReference::new(
                                             Identifier::new("Y".to_owned()),
-                                            vec![Type::I32Type]
+                                            vec![Type::I64Type]
                                         ),
                                         HashMap::from([
                                             (
@@ -188,7 +188,7 @@ mod tests {
                                                     ObjectLiteral::<UntypedNodeCommonFields>::new(
                                                         TypeReference::new(
                                                             Identifier::new("X".to_owned()),
-                                                            vec![Type::I32Type]
+                                                            vec![Type::I64Type]
                                                         ),
                                                         HashMap::from([(
                                                             "c".to_string(),
@@ -268,7 +268,7 @@ mod tests {
                 vec![Declaration::FunctionDeclaration(Rc::new(
                     FunctionDeclaration::<UntypedNodeCommonFields>::new(
                         Identifier::new("test".to_owned()),
-                        Type::I32Type,
+                        Type::I64Type,
                         vec![],
                         Rc::new(Block::new_with_final_expression(
                             vec![Statement::Declaration(Declaration::VariableDeclaration(
@@ -340,7 +340,7 @@ mod tests {
                     ClassDeclaration::new(
                         Identifier::new("X".to_owned()),
                         vec![],
-                        HashMap::from([("c".to_string(), Type::I32Type)]),
+                        HashMap::from([("c".to_string(), Type::I64Type)]),
                     ),
                     ClassDeclaration::new(
                         Identifier::new("Y".to_owned()),
@@ -372,7 +372,7 @@ mod tests {
                         VariableDeclaration::<UntypedNodeCommonFields>::new(
                             Rc::new(VariableDeclarator::<UntypedNodeCommonFields>::new(
                                 Identifier::new("a".to_owned()),
-                                Type::I32Type
+                                Type::I64Type
                             )),
                             Expression::IntegerLiteral(Rc::new(IntegerLiteral::<
                                 UntypedNodeCommonFields,
@@ -385,7 +385,7 @@ mod tests {
                         VariableDeclaration::<UntypedNodeCommonFields>::new(
                             Rc::new(VariableDeclarator::<UntypedNodeCommonFields>::new(
                                 Identifier::new("b".to_owned()),
-                                Type::I32Type
+                                Type::I64Type
                             )),
                             Expression::VariableReference(Rc::new(VariableReference::<
                                 UntypedNodeCommonFields,
@@ -413,18 +413,18 @@ mod tests {
                 vec![Declaration::FunctionDeclaration(Rc::new(
                     FunctionDeclaration::<UntypedNodeCommonFields>::new(
                         Identifier::new("add".to_owned()),
-                        Type::I32Type,
+                        Type::I64Type,
                         vec![
                             Rc::new(Parameter::<UntypedNodeCommonFields>::new(Rc::new(
                                 VariableDeclarator::<UntypedNodeCommonFields>::new(
                                     Identifier::new("a".to_owned()),
-                                    Type::I32Type,
+                                    Type::I64Type,
                                 )
                             ))),
                             Rc::new(Parameter::<UntypedNodeCommonFields>::new(Rc::new(
                                 VariableDeclarator::<UntypedNodeCommonFields>::new(
                                     Identifier::new("b".to_owned()),
-                                    Type::I32Type,
+                                    Type::I64Type,
                                 )
                             )))
                         ],
@@ -464,18 +464,18 @@ mod tests {
                         UntypedNodeCommonFields,
                     >::new(
                         Identifier::new("add".to_owned()),
-                        Type::I32Type,
+                        Type::I64Type,
                         vec![
                             Rc::new(Parameter::<UntypedNodeCommonFields>::new(Rc::new(
                                 VariableDeclarator::<UntypedNodeCommonFields>::new(
                                     Identifier::new("a".to_owned()),
-                                    Type::I32Type,
+                                    Type::I64Type,
                                 )
                             ))),
                             Rc::new(Parameter::<UntypedNodeCommonFields>::new(Rc::new(
                                 VariableDeclarator::<UntypedNodeCommonFields>::new(
                                     Identifier::new("b".to_owned()),
-                                    Type::I32Type,
+                                    Type::I64Type,
                                 )
                             )))
                         ],
@@ -502,7 +502,7 @@ mod tests {
                         UntypedNodeCommonFields,
                     >::new(
                         Identifier::new("test".to_owned(),),
-                        Type::I32Type,
+                        Type::I64Type,
                         vec![],
                         Rc::new(Block::new_with_final_expression(
                             vec![],
@@ -554,14 +554,14 @@ mod tests {
                         Identifier::new("updateState".to_owned()),
                         Type::TypeReference(Rc::new(TypeReference::new(
                             Identifier::new("C".to_owned()),
-                            vec![Type::I32Type]
+                            vec![Type::I64Type]
                         ))),
                         vec![Rc::new(Parameter::<UntypedNodeCommonFields>::new(Rc::new(
                             VariableDeclarator::<UntypedNodeCommonFields>::new(
                                 Identifier::new("c".to_owned()),
                                 Type::TypeReference(Rc::new(TypeReference::new(
                                     Identifier::new("C".to_owned()),
-                                    vec![Type::I32Type]
+                                    vec![Type::I64Type]
                                 )))
                             )
                         )))],
@@ -572,7 +572,7 @@ mod tests {
                             >::new(
                                 TypeReference::new(
                                     Identifier::new("C".to_owned()),
-                                    vec![Type::I32Type]
+                                    vec![Type::I64Type]
                                 ),
                                 HashMap::from([(
                                     "a".to_string(),
@@ -595,7 +595,7 @@ mod tests {
                         UntypedNodeCommonFields,
                     >::new(
                         Identifier::new("test".to_owned(),),
-                        Type::I32Type,
+                        Type::I64Type,
                         vec![],
                         Rc::new(Block::new_with_final_expression(
                             vec![Statement::Declaration(Declaration::VariableDeclaration(
@@ -604,7 +604,7 @@ mod tests {
                                         Identifier::new("c".to_owned()),
                                         Type::TypeReference(Rc::new(TypeReference::new(
                                             Identifier::new("C".to_owned()),
-                                            vec![Type::I32Type]
+                                            vec![Type::I64Type]
                                         )))
                                     )),
                                     Expression::ObjectLiteral(Rc::new(ObjectLiteral::<
@@ -612,7 +612,7 @@ mod tests {
                                     >::new(
                                         TypeReference::new(
                                             Identifier::new("C".to_owned()),
-                                            vec![Type::I32Type]
+                                            vec![Type::I64Type]
                                         ),
                                         HashMap::from([(
                                             "a".to_string(),

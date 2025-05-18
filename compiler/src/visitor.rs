@@ -7,7 +7,7 @@ pub trait PostOrderVisitor<InputTypeCommonFields: Clone, ReturnTypeCommonFields:
 
     fn process_boolean_literal(&mut self, value: &bool) -> BooleanLiteral<ReturnTypeCommonFields>;
 
-    fn process_integer_literal(&mut self, value: &i32) -> IntegerLiteral<ReturnTypeCommonFields>;
+    fn process_integer_literal(&mut self, value: &i64) -> IntegerLiteral<ReturnTypeCommonFields>;
 
     fn process_object_literal(
         &mut self,

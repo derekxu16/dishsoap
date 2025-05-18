@@ -54,7 +54,7 @@ impl<'a> PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for Ty
         BooleanLiteral::<TypedNodeCommonFields>::new(*value)
     }
 
-    fn process_integer_literal(&mut self, value: &i32) -> IntegerLiteral<TypedNodeCommonFields> {
+    fn process_integer_literal(&mut self, value: &i64) -> IntegerLiteral<TypedNodeCommonFields> {
         IntegerLiteral::<TypedNodeCommonFields>::new(*value)
     }
 
@@ -117,7 +117,7 @@ impl<'a> PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for Ty
         else_block: &Rc<Block<TypedNodeCommonFields>>,
     ) -> IfExpression<TypedNodeCommonFields> {
         IfExpression::<TypedNodeCommonFields>::new(
-            Type::I32Type,
+            Type::I64Type,
             condition.clone(),
             then_block.clone(),
             else_block.clone(),
@@ -135,7 +135,7 @@ impl<'a> PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for Ty
                 _ => panic!("Compilation error: incompatible types"),
             },
             PrefixOperator::Minus => match operand.get_type() {
-                Type::I32Type => (),
+                Type::I64Type => (),
                 _ => panic!("Compilation error: incompatible types"),
             },
         };

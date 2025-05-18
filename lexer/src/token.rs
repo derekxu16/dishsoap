@@ -89,8 +89,8 @@ pub enum Token {
     #[token("P_bool")]
     BoolPrimitiveKeyword,
 
-    #[token("P_i32")]
-    I32PrimitiveKeyword,
+    #[token("P_i64")]
+    I64PrimitiveKeyword,
 
     // Operators
     #[token("++")]

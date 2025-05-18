@@ -139,7 +139,7 @@ impl<'a> Builder<'a> {
         match r#type {
             Type::UnitType => unsafe { LLVMVoidType() },
             Type::BoolType => unsafe { LLVMInt1Type() },
-            Type::I32Type => unsafe { LLVMInt32Type() },
+            Type::I64Type => unsafe { LLVMInt64Type() },
             Type::RecordType(t) => self.lower_record_type(t.as_ref(), true),
             Type::FunctionType(t) => self.lower_function_type(t.as_ref()),
             Type::TypeReference(_) => unreachable!(),
@@ -166,7 +166,7 @@ impl<'a> Builder<'a> {
             IntegerLiteral {
                 common_fields: _,
                 value,
-            } => unsafe { LLVMConstInt(LLVMInt32Type(), *value as u64, true.into()) },
+            } => unsafe { LLVMConstInt(LLVMInt64Type(), *value as u64, 0) },
         }
     }
 

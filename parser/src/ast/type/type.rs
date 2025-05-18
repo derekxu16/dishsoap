@@ -6,7 +6,7 @@ use super::{FunctionType, RecordType, TypeReference};
 pub enum Type {
     UnitType,
     BoolType,
-    I32Type,
+    I64Type,
     RecordType(Rc<RecordType>),
     FunctionType(Rc<FunctionType>),
     TypeReference(Rc<TypeReference>),

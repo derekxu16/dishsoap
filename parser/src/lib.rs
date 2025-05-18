@@ -77,10 +77,10 @@ impl<'ast> Parser<'ast> {
         match self.lexer.peek() {
             Some(Token::UnitPrimitiveKeyword)
             | Some(Token::BoolPrimitiveKeyword)
-            | Some(Token::I32PrimitiveKeyword) => match self.lexer.pop() {
+            | Some(Token::I64PrimitiveKeyword) => match self.lexer.pop() {
                 Some(Token::UnitPrimitiveKeyword) => Type::UnitType,
                 Some(Token::BoolPrimitiveKeyword) => Type::BoolType,
-                Some(Token::I32PrimitiveKeyword) => Type::I32Type,
+                Some(Token::I64PrimitiveKeyword) => Type::I64Type,
                 _ => panic!("Compilation error"),
             },
             Some(Token::Identifier) => {
@@ -105,7 +105,7 @@ impl<'ast> Parser<'ast> {
             Err(e) => panic!("{}", e.message),
             _ => {
                 let value: String = self.lexer.slice().to_owned();
-                IntegerLiteral::<UntypedNodeCommonFields>::new(value.parse::<i32>().unwrap())
+                IntegerLiteral::<UntypedNodeCommonFields>::new(value.parse::<i64>().unwrap())
             }
         }
     }
