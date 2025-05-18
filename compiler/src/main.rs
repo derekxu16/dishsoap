@@ -13,8 +13,8 @@ use dishsoap_parser::{
 use llvm_sys::bit_writer::LLVMWriteBitcodeToFile;
 use llvm_sys::core::*;
 use llvm_sys::prelude::{LLVMContextRef, LLVMModuleRef};
+use types::{build_environment_from_top_level_declarations, EnvironmentStack, TypeChecker};
 // use llvm_sys::target_machine::LLVMGetDefaultTargetTriple;
-use crate::types::TypeChecker;
 use backend::builder::Builder;
 use utils::string_to_c_string;
 use visitor::{PostOrderVisitor, PreOrderVisitor};
@@ -36,7 +36,9 @@ fn parse_file(file_content: &String) -> Node<UntypedNodeCommonFields> {
 
 pub fn get_llvm_module_from_file(context: LLVMContextRef, file_content: &String) -> LLVMModuleRef {
     let untyped_ast = parse_file(file_content);
-    let mut type_checker = TypeChecker::new(&untyped_ast);
+    let mut environment_stack =
+        EnvironmentStack::new(build_environment_from_top_level_declarations(&untyped_ast));
+    let mut type_checker = TypeChecker::new(&untyped_ast, &mut environment_stack);
     let typed_ast = type_checker.visit(&untyped_ast);
 
     unsafe {
@@ -52,7 +54,7 @@ pub fn get_llvm_module_from_file(context: LLVMContextRef, file_content: &String)
         // );
         // let log_func = LLVMAddFunction(module, string_to_c_str(&"log".to_owned()), log_func_type);
 
-        let mut builder = Builder::new(&context, &module, &llvm_builder);
+        let mut builder = Builder::new(&context, &module, &llvm_builder, &mut environment_stack);
         builder.visit(&typed_ast);
 
         LLVMDisposeBuilder(llvm_builder);

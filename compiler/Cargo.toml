@@ -10,7 +10,7 @@ clap = { version = "3.0.14", features = ["derive"] }
 dishsoap-lexer = { path = "../lexer" }
 dishsoap-parser = { path = "../parser" }
 itertools = "0.10.3"
-llvm-sys = { version = "130" }
+llvm-sys = { version = "181.2.0" }
 serial_test = { version = "0.6.0" }
 
 [dev-dependencies]

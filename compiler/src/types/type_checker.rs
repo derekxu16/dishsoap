@@ -6,17 +6,19 @@ use crate::visitor::PostOrderVisitor;
 use dishsoap_parser::ast::*;
 
 use super::{
-    build_environment_from_top_level_declarations,
     populate_type_environment_from_top_level_declarations, EnvironmentStack, TypeEnvironment,
 };
 
-pub struct TypeChecker {
-    environment_stack: EnvironmentStack,
+pub struct TypeChecker<'a> {
     type_environment: TypeEnvironment,
+    environment_stack: &'a mut EnvironmentStack,
 }
 
-impl TypeChecker {
-    pub fn new(untyped_ast: &Node<UntypedNodeCommonFields>) -> TypeChecker {
+impl<'a> TypeChecker<'a> {
+    pub fn new(
+        untyped_ast: &Node<UntypedNodeCommonFields>,
+        environment_stack: &'a mut EnvironmentStack,
+    ) -> TypeChecker<'a> {
         let class_name_to_declaration: Rc<RefCell<HashMap<String, ClassDeclaration>>> =
             match untyped_ast {
                 Node::SourceFile(source_file) => Rc::new(RefCell::new(HashMap::from_iter(
@@ -34,18 +36,16 @@ impl TypeChecker {
             &untyped_ast,
         );
         TypeChecker {
-            environment_stack: EnvironmentStack::new(
-                build_environment_from_top_level_declarations(untyped_ast),
-            ),
             type_environment: TypeEnvironment {
                 type_reference_to_record_type_converters: type_reference_to_record_type_converters
                     .take(),
             },
+            environment_stack: environment_stack,
         }
     }
 }
 
-impl PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for TypeChecker {
+impl<'a> PostOrderVisitor<UntypedNodeCommonFields, TypedNodeCommonFields> for TypeChecker<'a> {
     fn process_unit_literal(&mut self) -> UnitLiteral<TypedNodeCommonFields> {
         UnitLiteral::<TypedNodeCommonFields>::new()
     }

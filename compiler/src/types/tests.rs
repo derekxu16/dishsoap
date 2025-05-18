@@ -1,4 +1,5 @@
 use super::type_checker::TypeChecker;
+use crate::types::{build_environment_from_top_level_declarations, EnvironmentStack};
 use crate::visitor::PostOrderVisitor;
 use dishsoap_parser::ast::*;
 use dishsoap_parser::test_inputs;
@@ -28,7 +29,9 @@ mod tests {
     fn parse_and_check(source: &str) -> Node<TypedNodeCommonFields> {
         let mut parser = Parser::new(source);
         let untyped_ast = parser.parse();
-        let mut type_checker = TypeChecker::new(&untyped_ast);
+        let mut environment_stack =
+            EnvironmentStack::new(build_environment_from_top_level_declarations(&untyped_ast));
+        let mut type_checker = TypeChecker::new(&untyped_ast, &mut environment_stack);
         let typed_ast = type_checker.visit(&untyped_ast).clone();
 
         typed_ast

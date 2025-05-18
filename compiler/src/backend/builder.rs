@@ -1,3 +1,4 @@
+use crate::types::EnvironmentStack;
 use crate::utils::{identifier_to_c_string, identifier_to_string, string_to_c_string};
 use crate::visitor::{PreOrderVisitor, PreOrderVisitorResponse};
 use dishsoap_parser::ast::*;
@@ -68,10 +69,11 @@ use std::rc::Rc;
 // }
 
 pub struct Builder<'a> {
-    variables: HashMap<String, LLVMValueRef>,
     context: &'a LLVMContextRef,
     module: &'a LLVMModuleRef,
     builder: &'a LLVMBuilderRef,
+    environment_stack: &'a mut EnvironmentStack,
+    variables: HashMap<String, LLVMValueRef>,
 }
 
 impl<'a> Builder<'a> {
@@ -79,16 +81,22 @@ impl<'a> Builder<'a> {
         context: &'a LLVMContextRef,
         module: &'a LLVMModuleRef,
         builder: &'a LLVMBuilderRef,
+        environment_stack: &'a mut EnvironmentStack,
     ) -> Self {
         Builder {
             context,
             module,
             builder,
+            environment_stack,
             variables: HashMap::new(),
         }
     }
 
-    pub fn lower_record_type(&mut self, r#type: &RecordType) -> LLVMTypeRef {
+    pub fn lower_record_type(
+        &mut self,
+        r#type: &RecordType,
+        lower_to_pointer_type: bool,
+    ) -> LLVMTypeRef {
         let element_count = r#type.fields.keys().len();
         let sorted_keys = r#type.fields.keys().sorted().collect::<Vec<&String>>();
         let mut element_types = sorted_keys
@@ -97,14 +105,17 @@ impl<'a> Builder<'a> {
             .collect::<Vec<LLVMTypeRef>>();
 
         unsafe {
-            LLVMPointerType(
-                LLVMStructType(
-                    element_types.as_mut_ptr(),
-                    element_count as u32,
-                    false.into(),
-                ),
-                0,
-            )
+            let struct_type = LLVMStructType(
+                element_types.as_mut_ptr(),
+                element_count as u32,
+                false.into(),
+            );
+
+            if lower_to_pointer_type {
+                LLVMPointerType(struct_type, 0)
+            } else {
+                struct_type
+            }
         }
     }
 
@@ -129,8 +140,8 @@ impl<'a> Builder<'a> {
             Type::UnitType => unsafe { LLVMVoidType() },
             Type::BoolType => unsafe { LLVMInt1Type() },
             Type::I32Type => unsafe { LLVMInt32Type() },
-            Type::RecordType(t) => self.lower_record_type(&**t),
-            Type::FunctionType(t) => self.lower_function_type(&**t),
+            Type::RecordType(t) => self.lower_record_type(t.as_ref(), true),
+            Type::FunctionType(t) => self.lower_function_type(t.as_ref()),
             Type::TypeReference(_) => unreachable!(),
         }
     }
@@ -164,19 +175,24 @@ impl<'a> Builder<'a> {
         object_literal: &ObjectLiteral<TypedNodeCommonFields>,
     ) -> LLVMValueRef {
         unsafe {
+            let object_type = match &object_literal.common_fields.r#type {
+                Type::RecordType(t) => t,
+                _ => unreachable!(),
+            };
+            let llvm_object_type = self.lower_record_type(object_type, false);
             let object_pointer = LLVMBuildMalloc(
                 *self.builder,
-                // TODO(derekxu16): Object types get lowered to pointer types in every case except
-                // this one. Look for a more elegant way of handling this.
-                LLVMGetElementType(self.lower_type(&object_literal.common_fields.r#type)),
+                llvm_object_type,
                 string_to_c_string("object_literal_malloc_temp".to_owned()).as_ptr(),
             );
             for (index, key) in object_literal.fields.keys().sorted().enumerate() {
+                let field = object_literal.fields.get(&*key).unwrap();
                 LLVMBuildStore(
                     *self.builder,
-                    self.lower_expression(object_literal.fields.get(&*key).unwrap()),
-                    LLVMBuildStructGEP(
+                    self.lower_expression(field),
+                    LLVMBuildStructGEP2(
                         *self.builder,
+                        llvm_object_type,
                         object_pointer,
                         index as u32,
                         string_to_c_string("object_literal_field_pointer_temp".to_string())
@@ -220,9 +236,16 @@ impl<'a> Builder<'a> {
             } => unsafe {
                 let function =
                     LLVMGetNamedFunction(*self.module, identifier_to_c_string(identifier).as_ptr());
+                let function_type = self
+                    .environment_stack
+                    .top()
+                    .get(&identifier.name)
+                    .unwrap()
+                    .clone();
 
-                LLVMBuildCall(
+                LLVMBuildCall2(
                     *self.builder,
+                    self.lower_type(&function_type),
                     function,
                     arguments
                         .iter()
@@ -271,13 +294,14 @@ impl<'a> Builder<'a> {
                 );
                 LLVMBuildCondBr(*self.builder, condition, then_bb, else_bb);
 
+                // TODO(derekxu16): This is unsafe.
+                let then_block_final_expression = then_block.final_expression.as_ref().unwrap();
                 LLVMAppendExistingBasicBlock(function, then_bb);
                 LLVMPositionBuilderAtEnd(*self.builder, then_bb);
                 self.visit(&Node::Block(then_block.clone()));
                 LLVMBuildStore(
                     *self.builder,
-                    // TODO(derekxu16): This is unsafe.
-                    self.lower_expression(then_block.final_expression.as_ref().unwrap()),
+                    self.lower_expression(then_block_final_expression),
                     result_value,
                 );
                 LLVMBuildBr(*self.builder, merge_bb);
@@ -296,8 +320,9 @@ impl<'a> Builder<'a> {
                 LLVMAppendExistingBasicBlock(function, merge_bb);
                 LLVMPositionBuilderAtEnd(*self.builder, merge_bb);
 
-                LLVMBuildLoad(
+                LLVMBuildLoad2(
                     *self.builder,
+                    self.lower_type(then_block_final_expression.get_type()),
                     result_value,
                     string_to_c_string("load_temp".to_owned()).as_ptr(),
                 )
@@ -422,25 +447,28 @@ impl<'a> Builder<'a> {
         &mut self,
         field_access: &FieldAccess<TypedNodeCommonFields>,
     ) -> LLVMValueRef {
-        let target_type = match field_access.target.get_type() {
-            Type::RecordType(t) => t,
-            _ => unreachable!(),
-        };
-
         unsafe {
-            let element_pointer = LLVMBuildStructGEP(
+            let target_type = match field_access.target.get_type() {
+                Type::RecordType(t) => t,
+                _ => unreachable!(),
+            };
+            let llvm_target_type = self.lower_record_type(target_type, false);
+            let field_index = target_type
+                .fields
+                .keys()
+                .sorted()
+                .position(|k| *k == field_access.field_name)
+                .unwrap() as u32;
+            let element_pointer = LLVMBuildStructGEP2(
                 *self.builder,
+                llvm_target_type,
                 self.lower_expression(&field_access.target),
-                target_type
-                    .fields
-                    .keys()
-                    .sorted()
-                    .position(|k| *k == field_access.field_name)
-                    .unwrap() as u32,
+                field_index,
                 string_to_c_string("field_access_pointer_temp".to_owned()).as_ptr(),
             );
-            LLVMBuildLoad(
+            LLVMBuildLoad2(
                 *self.builder,
+                LLVMStructGetTypeAtIndex(llvm_target_type, field_index),
                 element_pointer,
                 string_to_c_string("field_access_temp".to_owned()).as_ptr(),
             )
