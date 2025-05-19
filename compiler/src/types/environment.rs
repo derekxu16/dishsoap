@@ -44,7 +44,44 @@ impl EnvironmentStack {
 pub fn build_environment_from_top_level_declarations(
     source_file_node: &Node<UntypedNodeCommonFields>,
 ) -> Environment {
-    let mut environment: Environment = HashMap::new();
+    // TODO(derekxu16): Add `extern func`s to the language instead.
+    let mut environment: Environment = HashMap::from([
+        (
+            "__malloc".to_string(),
+            Type::FunctionType(Rc::new(FunctionType::new(
+                vec![Type::I64Type],
+                Type::I64Type,
+            )))
+        ),
+        (
+            "__free".to_string(),
+            Type::FunctionType(Rc::new(FunctionType::new(
+                vec![Type::I64Type],
+                Type::UnitType,
+            )))
+        ),
+        (
+            "__memMove".to_string(),
+            Type::FunctionType(Rc::new(FunctionType::new(
+                vec![Type::I64Type, Type::I64Type, Type::I64Type],
+                Type::UnitType,
+            )))
+        ),
+        (
+            "__memStore".to_string(),
+            Type::FunctionType(Rc::new(FunctionType::new(
+                vec![Type::I64Type, Type::I64Type, Type::I64Type],
+                Type::UnitType,
+            )))
+        ),
+        (
+            "__memLoad".to_string(),
+            Type::FunctionType(Rc::new(FunctionType::new(
+                vec![Type::I64Type, Type::I64Type],
+                Type::I64Type,
+            )))
+        ),
+    ]);
     match source_file_node {
         Node::SourceFile(source_file) => source_file.declarations.iter().for_each(|d| match d {
             Declaration::FunctionDeclaration(fd) => {

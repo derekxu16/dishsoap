@@ -137,8 +137,7 @@ impl<'a> Builder<'a> {
 
     pub fn lower_type(&mut self, r#type: &Type) -> LLVMTypeRef {
         match r#type {
-            Type::UnitType => unsafe { LLVMVoidType() },
-            Type::BoolType => unsafe { LLVMInt1Type() },
+            Type::UnitType | Type::BoolType => unsafe { LLVMInt1Type() },
             Type::I64Type => unsafe { LLVMInt64Type() },
             Type::RecordType(t) => self.lower_record_type(t.as_ref(), true),
             Type::FunctionType(t) => self.lower_function_type(t.as_ref()),
@@ -234,27 +233,146 @@ impl<'a> Builder<'a> {
                 identifier,
                 arguments,
             } => unsafe {
-                let function =
-                    LLVMGetNamedFunction(*self.module, identifier_to_c_string(identifier).as_ptr());
-                let function_type = self
-                    .environment_stack
-                    .top()
-                    .get(&identifier.name)
-                    .unwrap()
-                    .clone();
+                match identifier.name.as_str() {
+                    "__malloc" => {
+                        let malloc_function_type =
+                            LLVMFunctionType(LLVMInt64Type(), [LLVMInt64Type()].as_mut_ptr(), 1, 0);
+                        let mut malloc_function = LLVMGetNamedFunction(
+                            *self.module,
+                            string_to_c_string("malloc".to_owned()).as_ptr(),
+                        );
+                        if malloc_function.is_null() {
+                            malloc_function = LLVMAddFunction(
+                                *self.module,
+                                string_to_c_string("malloc".to_owned()).as_ptr(),
+                                malloc_function_type,
+                            );
+                        }
 
-                LLVMBuildCall2(
-                    *self.builder,
-                    self.lower_type(&function_type),
-                    function,
-                    arguments
-                        .iter()
-                        .map(|a| self.lower_expression(a))
-                        .collect::<Vec<LLVMValueRef>>()
-                        .as_mut_ptr(),
-                    arguments.len() as u32,
-                    string_to_c_string("call_temp".to_owned()).as_ptr(),
-                )
+                        LLVMBuildCall2(
+                            *self.builder,
+                            malloc_function_type,
+                            malloc_function,
+                            [LLVMBuildMul(
+                                *self.builder,
+                                self.lower_expression(&arguments[0]),
+                                LLVMSizeOf(LLVMInt64Type()),
+                                string_to_c_string("malloc_size_calculation_temp".to_owned())
+                                    .as_ptr(),
+                            )]
+                            .as_mut_ptr(),
+                            arguments.len() as u32,
+                            string_to_c_string("call_temp".to_owned()).as_ptr(),
+                        )
+                    }
+                    "__free" => {
+                        let free_function_type =
+                            LLVMFunctionType(LLVMVoidType(), [LLVMInt64Type()].as_mut_ptr(), 1, 0);
+                        let mut free_function = LLVMGetNamedFunction(
+                            *self.module,
+                            string_to_c_string("free".to_owned()).as_ptr(),
+                        );
+                        if free_function.is_null() {
+                            free_function = LLVMAddFunction(
+                                *self.module,
+                                string_to_c_string("free".to_owned()).as_ptr(),
+                                free_function_type,
+                            );
+                        }
+
+                        LLVMBuildCall2(
+                            *self.builder,
+                            free_function_type,
+                            free_function,
+                            [self.lower_expression(&arguments[0])].as_mut_ptr(),
+                            arguments.len() as u32,
+                            string_to_c_string("".to_owned()).as_ptr(),
+                        );
+                        LLVMConstInt(LLVMInt1Type(), 1, 0)
+                    }
+                    "__memMove" => {
+                        LLVMBuildMemMove(
+                            *self.builder,
+                            self.lower_expression(&arguments[0]),
+                            0,
+                            self.lower_expression(&arguments[1]),
+                            0,
+                            LLVMBuildMul(
+                                *self.builder,
+                                self.lower_expression(&arguments[2]),
+                                LLVMSizeOf(LLVMInt64Type()),
+                                string_to_c_string("malloc_size_calculation_temp".to_owned())
+                                    .as_ptr(),
+                            ),
+                        );
+
+                        LLVMConstInt(LLVMInt1Type(), 1, 0)
+                    }
+                    "__memStore" => {
+                        LLVMBuildStore(
+                            *self.builder,
+                            self.lower_expression(&arguments[2]),
+                            LLVMBuildGEP2(
+                                *self.builder,
+                                LLVMInt64Type(),
+                                LLVMBuildIntToPtr(
+                                    *self.builder,
+                                    self.lower_expression(&arguments[0]),
+                                    LLVMPointerType(LLVMInt64Type(), 0),
+                                    string_to_c_string("memStore_cast_temp".to_owned()).as_ptr(),
+                                ),
+                                [self.lower_expression(&arguments[1])].as_mut_ptr(),
+                                1,
+                                string_to_c_string("memStore_index_temp".to_owned()).as_ptr(),
+                            ),
+                        );
+
+                        LLVMConstInt(LLVMInt1Type(), 1, 0)
+                    }
+                    "__memLoad" => LLVMBuildLoad2(
+                        *self.builder,
+                        LLVMInt64Type(),
+                        LLVMBuildGEP2(
+                            *self.builder,
+                            LLVMInt64Type(),
+                            LLVMBuildIntToPtr(
+                                *self.builder,
+                                self.lower_expression(&arguments[0]),
+                                LLVMPointerType(LLVMInt64Type(), 0),
+                                string_to_c_string("memLoad_cast_temp".to_owned()).as_ptr(),
+                            ),
+                            [self.lower_expression(&arguments[1])].as_mut_ptr(),
+                            1,
+                            string_to_c_string("memLoad_index_temp".to_owned()).as_ptr(),
+                        ),
+                        string_to_c_string("load_temp".to_owned()).as_ptr(),
+                    ),
+                    _ => {
+                        let function = LLVMGetNamedFunction(
+                            *self.module,
+                            identifier_to_c_string(identifier).as_ptr(),
+                        );
+                        let function_type = self
+                            .environment_stack
+                            .top()
+                            .get(&identifier.name)
+                            .unwrap()
+                            .clone();
+
+                        LLVMBuildCall2(
+                            *self.builder,
+                            self.lower_type(&function_type),
+                            function,
+                            arguments
+                                .iter()
+                                .map(|a| self.lower_expression(a))
+                                .collect::<Vec<LLVMValueRef>>()
+                                .as_mut_ptr(),
+                            arguments.len() as u32,
+                            string_to_c_string("call_temp".to_owned()).as_ptr(),
+                        )
+                    }
+                }
             },
         }
     }

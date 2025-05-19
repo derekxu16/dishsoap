@@ -115,4 +115,11 @@ mod tests {
         let result = interpret(test_inputs::FUNCTION_CALL_UPDATE_STATE);
         assert_eq!(result, 1);
     }
+
+    #[test]
+    #[serial]
+    fn raw_vec() {
+        let result = interpret(test_inputs::RAW_VEC);
+        assert_eq!(result, 123);
+    }
 }

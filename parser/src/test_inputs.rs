@@ -99,3 +99,49 @@ func fib(n: P_i64) -> P_i64 {
     }
 }
 ";
+
+pub const RAW_VEC: &str = "
+class RawVec {
+    capacity: P_i64,
+    start_pointer: P_i64,
+}
+
+func RawVec_new() -> RawVec {
+    RawVec {
+        capacity: 0,
+        start_pointer: 0,
+    }
+}
+
+func RawVec_growBy(v: RawVec, growBy: P_i64) -> RawVec {
+    let next_capacity: P_i64 = v.capacity + growBy;
+    let next_start_pointer: P_i64 = __malloc(next_capacity);
+
+    let _: P_unit = __memMove(next_start_pointer, v.start_pointer, v.capacity);
+
+    let _: P_unit = __free(v.start_pointer);
+
+    RawVec {
+        capacity: next_capacity,
+        start_pointer: next_start_pointer,
+    }
+}
+
+// TODO(derekxu16): This should actually be
+// `func RawVec_store<T>(v: RawVec<T>, offset: P_i64, element: T) -> P_unit`.
+func RawVec_store(v: RawVec, index: P_i64, element: P_i64) -> P_unit {
+    __memStore(v.start_pointer, index, element)
+}
+
+func RawVec_load(v: RawVec, index: P_i64) -> P_i64 {
+    __memLoad(v.start_pointer, index)
+}
+
+func test() -> P_i64 {
+    let v: RawVec = RawVec_new();
+    let v2: RawVec = RawVec_growBy(v, 6);
+    let _: P_unit = RawVec_store(v2, 5, 123);
+    let v3: RawVec = RawVec_growBy(v2, 3);
+    RawVec_load(v3, 5)
+}
+";
